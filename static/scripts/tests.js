@@ -35,15 +35,15 @@ QUnit.test("Color basics", function(assert) {
 
 QUnit.test("Rect intersection", function(assert) {
   var smallRect = new Rect(10, 10, 0, 0, 0);
-  var largeRect = new Rect(20, 20, 255, 255, 255);
   assert.throws(
     function() {
-      smallRect.add(0, 0, largeRect);
+      smallRect.addAs(0, 0, 11, 11, new Color(255, 255, 255));
     },
     /too large/,
     "Correctly refuses to add a large rect to a small one."
   );
-  var newRect = largeRect.add(0, 0, smallRect);
+  var largeRect = new Rect(20, 20, 0, 0, 0); // black rectangle
+  var newRect = largeRect.addAs(10, 10, 10, 10, new Color(255, 255, 255));
   assert.equal(newRect.w, largeRect.w);
   assert.equal(newRect.h, largeRect.h);
   assert.equal(newRect.get(19, 19).hex, "#ffffff", "Original color is preserved.");

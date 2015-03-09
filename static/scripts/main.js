@@ -2,12 +2,19 @@ init = function() {
   CANVAS = $("#canvas")[0].getContext("2d");
   TILE_WIDTH = 1;
   TILE_HEIGHT = 1;
-  MUTATIONS_PER_ITERATION = 60;
-  ITERATIONS = 40;
+  MUTATIONS_PER_ITERATION = 100;
+  ITERATIONS = 30;
 
   target = loadImage();
   $("#canvas").attr("width", target.w);
   $("#canvas").attr("height", target.h);
+  var approxImage = new Rect(target.w, target.h, 0, 255, 255);
+  approxImage = approxImage.addAs(0, 0, 100, 100, new Color(255, 0, 0));
+  draw(approxImage, CANVAS);
+  approximateImage();
+}
+
+approximateImage = function() {
 
   // Start off our approximation with a white rectangle.
   var approxImage = new Rect(target.w, target.h, 255, 255, 255);
@@ -21,8 +28,18 @@ init = function() {
 
     // Try MUTATIONS_PER_ITERATION different mutations, keep the best.
     for (var i = 0; i < MUTATIONS_PER_ITERATION; i++) {
-      var rect = Rect.rnd(approxImage.w, approxImage.h);
-      var mutation = approxImage.add(rnd(0, target.w-rect.w), rnd(0, target.h-rect.h), rect);
+
+      // Choose the mutated block's width and height
+      var w = rnd(0, approxImage.w);
+      var h = rnd(0, approxImage.h);
+
+      // Build the mutation
+      var mutation = approxImage.addAs(
+        rnd(0, target.w-w), rnd(0, target.h-h),
+        w, h,
+        Color.rnd());
+
+      // Compare it to the best
       var score = mutation.distFrom(target);
       if (score < min) {
         min = score;

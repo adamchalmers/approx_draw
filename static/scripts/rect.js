@@ -38,13 +38,12 @@ Rect.rnd = function(w, h) {
   return new Rect(rnd(1, w), rnd(1, h), rnd(0, 255), rnd(0, 255), rnd(0, 255));
 }
 
-
 /**
  * Overlays the other rectangle on top of this one, from (x,y).
  * Returns the combined rectangle.
  */
-Rect.prototype.add = function(x, y, other) {
-  if (x + other.w > this.w || y + other.h > this.h) {
+Rect.prototype.addAs = function(x, y, w, h, color) {
+  if (x + w > this.w || y + h > this.h) {
     throw "Other rect is too large!";
   } else {
 
@@ -58,9 +57,9 @@ Rect.prototype.add = function(x, y, other) {
     }
 
     // Overwrite new rect with the other rect's colors
-    for (var i = 0; i < other.w; i++) {
-      for (var j = 0; j < other.h; j++) {
-        newRect.set(i + x, j + y, other.get(i, j));
+    for (var i = 0; i < w; i++) {
+      for (var j = 0; j < h; j++) {
+        newRect.set(i + x, j + y, color);
       }
     }
 
@@ -94,7 +93,6 @@ function Color(r, g, b) {
 
 Color.rnd = function() {
   var c = new Color(rnd(0, 255), rnd(0, 255), rnd(0, 255));
-  console.log(c);
   return c;
 }
 
