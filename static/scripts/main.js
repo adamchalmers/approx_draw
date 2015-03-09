@@ -2,7 +2,7 @@ init = function() {
   CANVAS = $("#canvas")[0].getContext("2d");
   TILE_WIDTH = 1;
   TILE_HEIGHT = 1;
-  MUTATIONS_PER_ITERATION = 100;
+  MUTATIONS_PER_ITERATION = 200;
   ITERATIONS = 20;
 
   var results = loadImage();
@@ -11,7 +11,6 @@ init = function() {
   $("#canvas").attr("width", target.w);
   $("#canvas").attr("height", target.h);
   var approxImage = new Rect(target.w, target.h, 0, 255, 255);
-  approxImage = approxImage.addAs(0, 0, 100, 100, new Color(255, 0, 0));
   draw(approxImage, CANVAS);
   approximateImage(target, colorsInPicture);
 }

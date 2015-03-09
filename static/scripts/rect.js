@@ -4,11 +4,11 @@ function Rect(w, h, r, g, b) {
   }
   this.w = w;
   this.h = h;
-  this.pixels = [];
+  this.pixels = new Array(w);
   for (var i = 0; i < w; i++) {
-    this.pixels.push([]);
+    this.pixels[i] = new Array(h);
     for (var j = 0; j < h; j++) {
-      this.pixels[i].push(new Color(r, g, b));
+      this.pixels[i][j] = new Color(r, g, b);
     }
   }
 }
@@ -31,11 +31,6 @@ Rect.prototype.set = function(x, y, color) {
     throw "Out of bounds access to " + this.toString();
   }
   this.pixels[x][y] = color;
-}
-
-// Return a new rectangle with random width, height and color.
-Rect.rnd = function(w, h) {
-  return new Rect(rnd(1, w), rnd(1, h), rnd(0, 255), rnd(0, 255), rnd(0, 255));
 }
 
 /**
@@ -81,14 +76,10 @@ Rect.prototype.distFrom = function(other) {
 }
 
 function Color(r, g, b) {
-  if (typeof(r) != undefined && typeof(g) != undefined && typeof(b) != undefined) {
     this.r = r;
     this.g = g;
     this.b = b;
     this.hex = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-  } else {
-    console.error("Illegal color!", r, g, b);
-  }
 }
 
 Color.rnd = function() {
