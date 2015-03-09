@@ -35,9 +35,7 @@ Rect.prototype.set = function(x, y, color) {
 
 // Return a new rectangle with random width, height and color.
 Rect.rnd = function(w, h) {
-  newRect = new Rect(rnd(1, w), rnd(1, h), rnd(0, 255), rnd(0, 255), rnd(0, 255));
-  console.log(newRect.toString());
-  return newRect;
+  return new Rect(rnd(1, w), rnd(1, h), rnd(0, 255), rnd(0, 255), rnd(0, 255));
 }
 
 
