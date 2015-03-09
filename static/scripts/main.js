@@ -3,26 +3,26 @@ init = function() {
   TILE_WIDTH = 1;
   TILE_HEIGHT = 1;
   MUTATIONS_PER_ITERATION = 100;
-  ITERATIONS = 30;
+  ITERATIONS = 20;
 
-  target = loadImage();
+  var results = loadImage();
+  var target = results[0];
+  var colorsInPicture = results[1];
   $("#canvas").attr("width", target.w);
   $("#canvas").attr("height", target.h);
   var approxImage = new Rect(target.w, target.h, 0, 255, 255);
   approxImage = approxImage.addAs(0, 0, 100, 100, new Color(255, 0, 0));
   draw(approxImage, CANVAS);
-  approximateImage();
+  approximateImage(target, colorsInPicture);
 }
 
-approximateImage = function() {
+approximateImage = function(target, colorsInPicture) {
 
   // Start off our approximation with a white rectangle.
   var approxImage = new Rect(target.w, target.h, 255, 255, 255);
   var min = approxImage.distFrom(target);
   var bestCanvas = approxImage;
   var start = Date.now();
-  console.log(min);
-  console.log("-----");
 
   for (var j = 0; j < ITERATIONS; j++) {
 
@@ -37,7 +37,7 @@ approximateImage = function() {
       var mutation = approxImage.addAs(
         rnd(0, target.w-w), rnd(0, target.h-h),
         w, h,
-        Color.rnd());
+        colorsInPicture[rnd(0, colorsInPicture.length)]);
 
       // Compare it to the best
       var score = mutation.distFrom(target);
@@ -47,7 +47,6 @@ approximateImage = function() {
       }
     }
     approxImage = bestCanvas;
-    console.log(min);
   }
   var timeTaken = (Date.now() - start)/1000;
   document.write(timeTaken + " seconds.");
@@ -80,6 +79,9 @@ loadImage = function() {
   ctx.drawImage(img, 0, 0, img.width, img.height);
   var data = ctx.getImageData(0, 0, $('#photo').attr('width'), $('#photo').attr('height'));
 
+  var colorsInPicture = {};
+  colorsObject = [];
+
   // Set up a rectangle with the pixel data from the image.
   var rect = new Rect(data.width, data.height, 0, 0, 0);
   for(var y = 0; y < img.height; y++) {
@@ -87,9 +89,15 @@ loadImage = function() {
       var r = data.data[((img.width * y) + x) * 4];
       var g = data.data[((img.width * y) + x) * 4 + 1];
       var b = data.data[((img.width * y) + x) * 4 + 2];
-      rect.set(x, y, new Color(r, g, b));
+      var color = new Color(r, g, b);
+      rect.set(x, y, color);
+      if (!colorsInPicture[color.hex]) {
+        colorsInPicture[color.hex] = true;
+        colorsObject.push(color);
+      }
     }
   }
+  console.log(colorsInPicture);
   draw(rect, ctx);
-  return rect;
+  return [rect, colorsObject];
 }
