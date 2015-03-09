@@ -1,10 +1,9 @@
 init = function() {
-  document.write("Starting");
   CANVAS = $("#canvas")[0].getContext("2d");
   TILE_WIDTH = 1;
   TILE_HEIGHT = 1;
-  MUTATIONS_PER_ITERATION = 80;
-  ITERATIONS = 80;
+  MUTATIONS_PER_ITERATION = 60;
+  ITERATIONS = 40;
 
   target = loadImage();
   $("#canvas").attr("width", target.w);
@@ -14,6 +13,7 @@ init = function() {
   var approxImage = new Rect(target.w, target.h, 255, 255, 255);
   var min = approxImage.distFrom(target);
   var bestCanvas = approxImage;
+  var start = Date.now();
   console.log(min);
   console.log("-----");
 
@@ -30,9 +30,11 @@ init = function() {
       }
     }
     approxImage = bestCanvas;
-    draw(bestCanvas, CANVAS);
     console.log(min);
   }
+  var timeTaken = (Date.now() - start)/1000;
+  document.write(timeTaken + " seconds.");
+  draw(bestCanvas, CANVAS);
 };
 
 // Draw a rectangle using a canvas 2d context.
