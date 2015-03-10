@@ -37,28 +37,17 @@ Rect.prototype.set = function(x, y, color) {
  * Overlays the other rectangle on top of this one, from (x,y).
  * Returns the combined rectangle.
  */
-Rect.prototype.addAs = function(x, y, w, h, color) {
+Rect.prototype.mutate = function(x, y, w, h, color) {
   if (x + w > this.w || y + h > this.h) {
     throw "Other rect is too large!";
   } else {
 
-    var newRect = new Rect(this.w, this.h, 0, 0, 0);
-
-    // Copy this rect into the new rect
-    for (var i = 0; i < this.w; i++) {
-      for (var j = 0; j < this.h; j++) {
-        newRect.set(i, j, this.get(i,j));
-      }
-    }
-
     // Overwrite new rect with the other rect's colors
     for (var i = 0; i < w; i++) {
       for (var j = 0; j < h; j++) {
-        newRect.set(i + x, j + y, color);
+        this.set(i + x, j + y, color);
       }
     }
-
-    return newRect;
   }
 }
 
@@ -75,6 +64,21 @@ Rect.prototype.distFrom = function(other) {
   return dist;
 }
 
+Rect.prototype.scoreWithMutation = function(x, y, w, h, color, target) {
+  var score = 0;
+  for (var i = 0; i < this.w; i++) {
+    for (var j = 0; j < this.h; j++) {
+      if (i >= x && i < x + w && j >= y && j < y + h) {
+        score += color.distFrom(target.get(i,j));
+      } else {
+        score += this.get(i,j).distFrom(target.get(i, j));
+      }
+      //console.log(score);
+    }
+  }
+  return score;
+}
+
 function Color(r, g, b) {
     this.r = r;
     this.g = g;
@@ -88,7 +92,8 @@ Color.rnd = function() {
 }
 
 Color.prototype.distFrom = function(other) {
-  return Math.abs(this.r - other.r) + Math.abs(this.g - other.g) + Math.abs(this.b - other.b);
+  var dist = Math.abs(this.r - other.r) + Math.abs(this.g - other.g) + Math.abs(this.b - other.b);
+  return dist;
 }
 
 function rnd(low, high) {

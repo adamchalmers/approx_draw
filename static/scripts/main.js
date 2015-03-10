@@ -20,7 +20,7 @@ approximateImage = function(target, colorsInPicture) {
   // Start off our approximation with a white rectangle.
   var approxImage = new Rect(target.w, target.h, 255, 255, 255);
   var min = approxImage.distFrom(target);
-  var bestCanvas = approxImage;
+  var bestMutation = undefined; // [x, y, w, h, color]
   var start = Date.now();
 
   for (var j = 0; j < ITERATIONS; j++) {
@@ -28,28 +28,28 @@ approximateImage = function(target, colorsInPicture) {
     // Try MUTATIONS_PER_ITERATION different mutations, keep the best.
     for (var i = 0; i < MUTATIONS_PER_ITERATION; i++) {
 
-      // Choose the mutated block's width and height
+      // Choose the mutated block's properties
       var w = rnd(0, approxImage.w);
       var h = rnd(0, approxImage.h);
+      var x = rnd(0, target.w-w);
+      var y = rnd(0, target.h-h);
+      var color = colorsInPicture[rnd(0, colorsInPicture.length)];
 
-      // Build the mutation
-      var mutation = approxImage.addAs(
-        rnd(0, target.w-w), rnd(0, target.h-h),
-        w, h,
-        colorsInPicture[rnd(0, colorsInPicture.length)]);
+      // Score the mutation
+      var score = approxImage.scoreWithMutation(x, y, w, h, color, target);
 
       // Compare it to the best
-      var score = mutation.distFrom(target);
       if (score < min) {
         min = score;
-        bestCanvas = mutation;
+        bestMutation = [x, y, w, h, color];
       }
     }
-    approxImage = bestCanvas;
+    approxImage.mutate(bestMutation[0], bestMutation[1], bestMutation[2],
+                       bestMutation[3], bestMutation[4]);
   }
   var timeTaken = (Date.now() - start)/1000;
   document.write(timeTaken + " seconds.");
-  draw(bestCanvas, CANVAS);
+  draw(approxImage, CANVAS);
 };
 
 // Draw a rectangle using a canvas 2d context.

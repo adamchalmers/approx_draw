@@ -33,27 +33,29 @@ QUnit.test("Color basics", function(assert) {
   assert.equal(g.distFrom(f), 2);
 });
 
-QUnit.test("Rect intersection", function(assert) {
+QUnit.test("Rect mutations", function(assert) {
   var smallRect = new Rect(10, 10, 0, 0, 0);
   assert.throws(
     function() {
-      smallRect.addAs(0, 0, 11, 11, new Color(255, 255, 255));
+      smallRect.mutate(0, 0, 11, 11, new Color(255, 255, 255));
     },
     /too large/,
     "Correctly refuses to add a large rect to a small one."
   );
   var largeRect = new Rect(20, 20, 0, 0, 0); // black rectangle
-  var newRect = largeRect.addAs(10, 10, 10, 10, new Color(255, 255, 255));
-  assert.equal(newRect.w, largeRect.w);
-  assert.equal(newRect.h, largeRect.h);
-  assert.equal(newRect.get(19, 19).hex, "#ffffff", "Original color is preserved.");
-  assert.equal(newRect.get(0, 0).hex, "#000000", "New color correctly changed.");
+  largeRect.mutate(10, 10, 10, 10, new Color(255, 255, 255));
+  assert.equal(largeRect.w, 20);
+  assert.equal(largeRect.h, 20);
+  assert.equal(largeRect.get(19, 19).hex, "#ffffff", "Original color is preserved.");
+  assert.equal(largeRect.get(0, 0).hex, "#000000", "New color correctly changed.");
 });
 
-QUnit.test("Random builders", function(assert) {
-  assert.ok(Color.rnd().hex);
-  assert.ok(Rect.rnd(10, 10).get(0, 0).hex);
-})
+QUnit.test("Rect scoreWithMutation", function(assert) {
+  var rect = new Rect(10, 10, 0, 0, 0); // black rectangle
+  var target = new Rect(10, 10, 0, 0, 0); // another black rectangle
+  var score = rect.scoreWithMutation(0, 0, 1, 1, new Color(255, 255, 255), target);
+  assert.equal(765, score);
+});
 
 QUnit.test("Rect distance", function(assert) {
   var black = new Rect(4, 4, 0, 0, 0);
