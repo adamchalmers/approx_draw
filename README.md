@@ -5,6 +5,7 @@ This uses a very simple hill-climbing algorithm to randomly place rectangles on 
 
 <h2>Algorithm</h2>
 ```
+current approximation = empty canvas
 for NUM_ITERATIONS
   for NUM_RECTANGLES_PER_ITERATION
     Generate a random_rectangle.
@@ -13,9 +14,21 @@ for NUM_ITERATIONS
       best_score = score
       best_rectangle = random_rectangle
   current approximation += best rectangle.
-  ```
+display current approximation
+```
+The score is calculated like so:
+```
+score(approximate_img, target_img):
+  score = 0
+  for pixel, target_pixel in approximate_img, target_img
+    score += abs(target_pixel.r - pixel.r) + abs(target_pixel.g - pixel.g) + abs(target_pixel.b - pixel.b)
+  return score
+```
 <h2>Demo</h2>
 ![Image showing demo of approximation](https://cloud.githubusercontent.com/assets/5407457/6572281/0d9c1cfe-c765-11e4-8060-257ff2e5d688.jpg)
+![Image showing demo of approximation](https://cloud.githubusercontent.com/assets/5407457/6575528/911fc346-c783-11e4-9cce-521c92305616.png)
+![Image showing demo of approximation](https://cloud.githubusercontent.com/assets/5407457/6575534/978b74fa-c783-11e4-9071-5e8ac8a7c801.png)
+![Image showing demo of approximation](https://cloud.githubusercontent.com/assets/5407457/6575532/93e73046-c783-11e4-93f6-aafc898a4934.png)
 
 <h2>To do</h2>
  - Image upload (by extending the server)
