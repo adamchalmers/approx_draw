@@ -15,3 +15,5 @@ for NUM_ITERATIONS
       best_rectangle = random_rectangle
   current approximation += best rectangle.
   ```
+
+![Image showing demo of approximation](https://cloud.githubusercontent.com/assets/5407457/6572281/0d9c1cfe-c765-11e4-8060-257ff2e5d688.jpg)
