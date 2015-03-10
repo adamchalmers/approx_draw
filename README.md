@@ -36,3 +36,4 @@ score(approximate_img, target_img):
  - Image upload (by extending the server)
  - Do the processing server-side instead
   - Use numpy or rewrite server in Java/Go to get faster performance than Python
+ - Make GIFs that show the images being built up, rectangle by rectangle
