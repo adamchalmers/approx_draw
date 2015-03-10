@@ -21,7 +21,9 @@ The score is calculated like so:
 score(approximate_img, target_img):
   score = 0
   for pixel, target_pixel in approximate_img, target_img
-    score += abs(target_pixel.r - pixel.r) + abs(target_pixel.g - pixel.g) + abs(target_pixel.b - pixel.b)
+    score += abs(target_pixel.r - pixel.r) 
+    score += abs(target_pixel.g - pixel.g) 
+    score += abs(target_pixel.b - pixel.b)
   return score
 ```
 <h2>Demo</h2>
