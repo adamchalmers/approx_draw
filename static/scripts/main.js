@@ -2,8 +2,8 @@ init = function() {
   CANVAS = $("#canvas")[0].getContext("2d");
   TILE_WIDTH = 1;
   TILE_HEIGHT = 1;
-  MUTATIONS_PER_ITERATION = 200;
-  ITERATIONS = 20;
+  MUTATIONS_PER_ITERATION = 6000;
+  ITERATIONS = 40;
 
   var results = loadImage();
   var target = results[0];
@@ -19,11 +19,13 @@ approximateImage = function(target, colorsInPicture) {
 
   // Start off our approximation with a white rectangle.
   var approxImage = new Rect(target.w, target.h, 255, 255, 255);
-  var min = approxImage.distFrom(target);
+  var min = approxImage.score(target);
   var bestMutation = undefined; // [x, y, w, h, color]
   var start = Date.now();
 
   for (var j = 0; j < ITERATIONS; j++) {
+
+    var cachedScore = min;
 
     // Try MUTATIONS_PER_ITERATION different mutations, keep the best.
     for (var i = 0; i < MUTATIONS_PER_ITERATION; i++) {
@@ -36,7 +38,7 @@ approximateImage = function(target, colorsInPicture) {
       var color = colorsInPicture[rnd(0, colorsInPicture.length)];
 
       // Score the mutation
-      var score = approxImage.scoreWithMutation(x, y, w, h, color, target);
+      var score = approxImage.scoreWithMutation(x, y, w, h, color, target, cachedScore);
 
       // Compare it to the best
       if (score < min) {
@@ -50,6 +52,7 @@ approximateImage = function(target, colorsInPicture) {
   var timeTaken = (Date.now() - start)/1000;
   document.write(timeTaken + " seconds.");
   draw(approxImage, CANVAS);
+  console.log(min/1000000);
 };
 
 // Draw a rectangle using a canvas 2d context.

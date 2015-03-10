@@ -51,7 +51,7 @@ Rect.prototype.mutate = function(x, y, w, h, color) {
   }
 }
 
-Rect.prototype.distFrom = function(other) {
+Rect.prototype.score = function(other) {
   if (this.w != other.w || this.h != other.h) {
     throw "Can only find distance between equal-dimension rectangles."
   }
@@ -64,19 +64,30 @@ Rect.prototype.distFrom = function(other) {
   return dist;
 }
 
-Rect.prototype.scoreWithMutation = function(x, y, w, h, color, target) {
-  var score = 0;
-  for (var i = 0; i < this.w; i++) {
-    for (var j = 0; j < this.h; j++) {
-      if (i >= x && i < x + w && j >= y && j < y + h) {
-        score += color.distFrom(target.get(i,j));
-      } else {
-        score += this.get(i,j).distFrom(target.get(i, j));
+Rect.prototype.scoreWithMutation = function(x, y, w, h, color, target, cachedScore) {
+  if (cachedScore === undefined) {
+    var score = 0;
+    for (var i = 0; i < this.w; i++) {
+      for (var j = 0; j < this.h; j++) {
+        if (i >= x && i < x + w && j >= y && j < y + h) {
+          score += color.distFrom(target.get(i,j));
+        } else {
+          score += this.get(i,j).distFrom(target.get(i, j));
+        }
+        //console.log(score);
       }
-      //console.log(score);
     }
+    return score;
+  } else {
+    var score = cachedScore;
+    for (var i = x; i < x + w; i++) {
+      for (var j = y; j < y + h; j++) {
+          score += color.distFrom(target.get(i,j));
+          score -= this.get(i,j).distFrom(target.get(i, j));
+      }
+    }
+    return score;
   }
-  return score;
 }
 
 function Color(r, g, b) {

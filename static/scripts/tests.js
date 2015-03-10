@@ -57,16 +57,24 @@ QUnit.test("Rect scoreWithMutation", function(assert) {
   assert.equal(765, score);
 });
 
+QUnit.test("Rect scoreWithMutation cached", function(assert) {
+  var rect = new Rect(10, 10, 0, 0, 0); // black rectangle
+  var target = new Rect(10, 10, 0, 0, 0); // another black rectangle
+  var cacheScore = rect.score(target);
+  var score = rect.scoreWithMutation(0, 0, 1, 1, new Color(255, 255, 255), target, cacheScore);
+  assert.equal(765, score);
+});
+
 QUnit.test("Rect distance", function(assert) {
   var black = new Rect(4, 4, 0, 0, 0);
   var nearlyBlack = new Rect(4, 4, 0, 10, 0);
-  assert.equal(black.distFrom(nearlyBlack), 160);
+  assert.equal(black.score(nearlyBlack), 160);
   var white = new Rect(4, 4, 255, 255, 255);
-  assert.equal(black.distFrom(white), 12240);
+  assert.equal(black.score(white), 12240);
   var large = new Rect(5, 5, 0, 0, 0);
   assert.throws(
     function() {
-      black.distFrom(large);
+      black.score(large);
     },
     /dimension/);
 })
