@@ -64,36 +64,24 @@ Rect.prototype.score = function(other) {
   return dist;
 }
 
+/*
+ * Calculates the distance between the target rectangle and a mutated version of this one.
+ * The mutation involves placing a rectangle [x,y,w,h,color] over this rectangle.
+ * cachedScore is the previously-computed score of this rectangle.
+ */
 Rect.prototype.scoreWithMutation = function(x, y, w, h, color, target, cachedScore) {
-  if (cachedScore === undefined) {
-    // Simply sum each pixel's difference from the target
-    var score = 0;
-    for (var i = 0; i < this.w; i++) {
-      for (var j = 0; j < this.h; j++) {
-        // Pixel is in the mutated section:
-        if (i >= x && i < x + w && j >= y && j < y + h) {
-          score += color.distFrom(target.get(i,j));
-        // Pixel is in the unaltered, original section:
-        } else {
-          score += this.get(i,j).distFrom(target.get(i, j));
-        }
-      }
+  // Use the cached score, and only recompute the bits that will be different
+  // after applying the mutation.
+  var score = cachedScore;
+  // Loop over the mutated area:
+  for (var i = x; i < x + w; i++) {
+    for (var j = y; j < y + h; j++) {
+        // Subtract the original color's score, add the mutated color's score.
+        score += color.distFrom(target.get(i,j));
+        score -= this.get(i,j).distFrom(target.get(i, j));
     }
-    return score;
-  } else {
-    // Use the cached score, and only recompute the bits that will be different
-    // after applying the mutation.
-    var score = cachedScore;
-    // Loop over the mutated area:
-    for (var i = x; i < x + w; i++) {
-      for (var j = y; j < y + h; j++) {
-          // Subtract the original color's score, add the mutated color's score.
-          score += color.distFrom(target.get(i,j));
-          score -= this.get(i,j).distFrom(target.get(i, j));
-      }
-    }
-    return score;
   }
+  return score;
 }
 
 function Color(r, g, b) {

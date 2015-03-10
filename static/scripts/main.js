@@ -2,8 +2,8 @@ init = function() {
   CANVAS = $("#canvas")[0].getContext("2d");
   TILE_WIDTH = 1;
   TILE_HEIGHT = 1;
-  MUTATIONS_PER_ITERATION = 6000;
-  ITERATIONS = 40;
+  MUTATIONS_PER_ITERATION = 20000;
+  ITERATIONS = 60;
 
   var results = loadImage();
   var target = results[0];
