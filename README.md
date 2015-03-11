@@ -21,11 +21,12 @@ The score is calculated like so:
 score(approximate_img, target_img):
   score = 0
   for pixel, target_pixel in approximate_img, target_img
-    score += abs(target_pixel.r - pixel.r) 
-    score += abs(target_pixel.g - pixel.g) 
+    score += abs(target_pixel.r - pixel.r)
+    score += abs(target_pixel.g - pixel.g)
     score += abs(target_pixel.b - pixel.b)
   return score
 ```
+Its performance is O(I*R*P), where I is iterations, R is rectangles per iteration, and P is pixels in the image. This suggests that if you want a good render, try downscaling your image first! I've gotten good results with images under 200x200 pixels.
 <h2>Demo</h2>
 ![Image showing demo of approximation](https://cloud.githubusercontent.com/assets/5407457/6572281/0d9c1cfe-c765-11e4-8060-257ff2e5d688.jpg)
 ![Image showing demo of approximation](https://cloud.githubusercontent.com/assets/5407457/6575528/911fc346-c783-11e4-9cce-521c92305616.png)
@@ -37,3 +38,4 @@ score(approximate_img, target_img):
  - Do the processing server-side instead
   - Use numpy or rewrite server in Java/Go to get faster performance than Python
  - Make GIFs that show the images being built up, rectangle by rectangle
+ - Further optimize by cutting off the scoreWithMutation calculation once it's higher than the cached score by enough that the remaining pixels couldn't possibly even it back out.

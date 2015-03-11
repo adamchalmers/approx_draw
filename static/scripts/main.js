@@ -52,7 +52,7 @@ approximateImage = function(target, colorsInPicture) {
   var timeTaken = (Date.now() - start)/1000;
 
   draw(approxImage, CANVAS);
-  $("#time-info").text(timeTaken + " seconds, " + ITERATIONS + " rectangles, " + MUTATIONS_PER_ITERATION + " population.");
+  $("#time-info").text(timeTaken + " seconds, " + ITERATIONS + " rectangles, " + MUTATIONS_PER_ITERATION + " population, " + target.w + "x" + target.h);
   console.log(min/1000000);
 };
 

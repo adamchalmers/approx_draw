@@ -50,13 +50,6 @@ QUnit.test("Rect mutations", function(assert) {
   assert.equal(largeRect.get(0, 0).hex, "#000000", "New color correctly changed.");
 });
 
-QUnit.test("Rect scoreWithMutation", function(assert) {
-  var rect = new Rect(10, 10, 0, 0, 0); // black rectangle
-  var target = new Rect(10, 10, 0, 0, 0); // another black rectangle
-  var score = rect.scoreWithMutation(0, 0, 1, 1, new Color(255, 255, 255), target);
-  assert.equal(765, score);
-});
-
 QUnit.test("Rect scoreWithMutation cached", function(assert) {
   var rect = new Rect(10, 10, 0, 0, 0); // black rectangle
   var target = new Rect(10, 10, 0, 0, 0); // another black rectangle
