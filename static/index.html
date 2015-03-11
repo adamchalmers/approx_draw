@@ -2,6 +2,7 @@
 <body style="background: #eee;">
 
   <p><a href="tests.html">Tests</a></p>
+  <button id="start">Render</button>
   <div class="container">
     <canvas id="canvas" width="1" height="1" style="border:1px solid black"></canvas>
     <canvas id="photo" width="1" height="1" style="border:1px solid black"></canvas>
@@ -14,11 +15,13 @@
   <script>
     ITERATIONS = 20;
     MUTATIONS_PER_ITERATION = 2000;
-    var imgSrc =  "img/monalisa.png";
-    $('.container').append('<img src="' + imgSrc + '" id="target-image">');
-    var img = $("#target-image").css("height", "auto").css("width", "auto").hide();
-    img.load(function() {
-      init(ITERATIONS, MUTATIONS_PER_ITERATION, img);
+    $("#start").on("click", function() {
+      var imgUrl = "img/monalisa.png";
+      $('.container').append('<img src="' + imgUrl + '" id="target-image">');
+      var img = $("#target-image").css("height", "auto").css("width", "auto").hide();
+      img.load(function() {
+        init(ITERATIONS, MUTATIONS_PER_ITERATION, img);
+      })
     })
   </script>
 
