@@ -1,18 +1,18 @@
-init = function() {
+init = function(ITERATIONS, MUTATIONS_PER_ITERATION, IMG) {
   CANVAS = $("#canvas")[0].getContext("2d");
   TILE_WIDTH = 1;
   TILE_HEIGHT = 1;
-  MUTATIONS_PER_ITERATION = 20000;
-  ITERATIONS = 60;
 
-  var results = loadImage();
+  var results = loadImage(IMG);
   var target = results[0];
   var colorsInPicture = results[1];
   $("#canvas").attr("width", target.w);
   $("#canvas").attr("height", target.h);
-  var approxImage = new Rect(target.w, target.h, 0, 255, 255);
+  var approxImage = new Rect(target.w, target.h, 0, 0, 0);
   draw(approxImage, CANVAS);
-  approximateImage(target, colorsInPicture);
+  window.setTimeout(function() {
+    approximateImage(target, colorsInPicture);
+  }, 1000);
 }
 
 approximateImage = function(target, colorsInPicture) {
@@ -50,8 +50,9 @@ approximateImage = function(target, colorsInPicture) {
                        bestMutation[3], bestMutation[4]);
   }
   var timeTaken = (Date.now() - start)/1000;
-  document.write(timeTaken + " seconds.");
+
   draw(approxImage, CANVAS);
+  $("#time-info").text(timeTaken + " seconds, " + ITERATIONS + " rectangles, " + MUTATIONS_PER_ITERATION + " population.");
   console.log(min/1000000);
 };
 
@@ -70,8 +71,8 @@ draw = function(rect, ctx) {
 };
 
 // Loads the image from the DOM into a Rect object.
-loadImage = function() {
-  var img = $('#target-image')[0];
+loadImage = function(IMG) {
+  var img = IMG[0];
   var canvas = $('#photo')[0];
 
   // Draw the image into the canvas

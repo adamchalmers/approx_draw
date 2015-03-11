@@ -1,19 +1,25 @@
 <html>
 <body style="background: #eee;">
 
+  <p><a href="tests.html">Tests</a></p>
   <div class="container">
-    <canvas id="canvas" width="500" height="500" style="border:1px solid black"></canvas>
-    <canvas id="photo" width="500" height="500" style="border:1px solid black"></canvas>
-    <img id="target-image" src="img/monalisa.png" style="display: none;"/>
+    <canvas id="canvas" width="1" height="1" style="border:1px solid black"></canvas>
+    <canvas id="photo" width="1" height="1" style="border:1px solid black"></canvas>
+    <p id="time-info"></p>
   </div>
-  <a href="tests.html">Tests</a>
 
   <script src="jquery/dist/jquery.js"></script>
   <script src="scripts/rect.js"></script>
   <script src="scripts/main.js"></script>
   <script>
-    g = {};
-    init();
+    ITERATIONS = 10;
+    MUTATIONS_PER_ITERATION = 2000;
+    var imgSrc =  "img/monalisa.png";
+    $('.container').append('<img src="' + imgSrc + '" id="target-image">');
+    var img = $("#target-image").css("height", "auto").css("width", "auto").hide();
+    img.load(function() {
+      init(ITERATIONS, MUTATIONS_PER_ITERATION, img);
+    })
   </script>
 
 </body>
