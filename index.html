@@ -1,13 +1,24 @@
 <html>
-<body style="background: #eee;">
+<head>
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <title>Approxidraw</title>
+</head>
+<body>
 
-  <p><a href="tests.html">Tests</a></p>
-  <button id="start">Render</button>
-  <input type="text" value="https://i.imgur.com/t0XRVO0.png" id="imgUrl">
-  <div class="container">
-    <canvas id="canvas" width="1" height="1" style="border:1px solid black"></canvas>
-    <img id="target-image">
-    <p id="time-info"></p>
+  <!--<p><a href="tests.html">Tests</a></p>-->
+  <h1>Approxidraw</h1>
+  <div id="wrapper">
+    <div class="container">
+      <div id="inputs">
+        <input type="text" value="https://i.imgur.com/t0XRVO0.png" id="imgUrl">
+        <button id="start">Render</button>
+      </div>
+      <div>
+        <img id="target-image">
+        <canvas id="canvas" width="1" height="1" style="border:1px solid black"></canvas>
+        <p id="stats"></p>
+      </div>
+    </div>
   </div>
 
   <script src="jquery/dist/jquery.js"></script>
@@ -15,15 +26,15 @@
   <script src="scripts/main.js"></script>
   <script>
     rendering = false;
-    ITERATIONS = 40;
-    MUTATIONS_PER_ITERATION = 4000;
+    ITERATIONS = 10;
+    MUTATIONS_PER_ITERATION = 400;
     $("#start").on("click", function() {
       if (!rendering) {
         rendering = true;
         var dataPrefix = "/image/img?url=";
         var filePrefix = "/remote/img?url=";
         var imgUrl = $("#imgUrl").val();
-        var img = $("#target-image").attr("src", filePrefix + imgUrl).css("height", "auto").css("width", "auto");
+        var img = $("#target-image").attr("src", filePrefix + imgUrl).css("height", "auto").css("width", "auto").hide();
         console.log("Rendering", imgUrl);
         init(ITERATIONS, MUTATIONS_PER_ITERATION, img, dataPrefix+imgUrl);
       }

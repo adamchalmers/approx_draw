@@ -6,6 +6,7 @@ init = function(ITERATIONS, MUTATIONS_PER_ITERATION, IMG, url) {
   var results = loadImage(IMG, url, function(target, colorsArray) {
     $("#canvas").attr("width", target.w);
     $("#canvas").attr("height", target.h);
+    $("#target-image").show();
     var approxImage = new Rect(target.w, target.h, 0, 0, 0);
     draw(approxImage, CANVAS);
     window.setTimeout(function() {
@@ -52,7 +53,7 @@ approximateImage = function(target, colorsArray) {
   var timeTaken = (Date.now() - start)/1000;
 
   draw(approxImage, CANVAS);
-  $("#time-info").text(timeTaken + " seconds, " + ITERATIONS + " rectangles, " + MUTATIONS_PER_ITERATION + " population, " + target.w + "x" + target.h);
+  $("#stats").text(timeTaken + " seconds, " + ITERATIONS + " rectangles, " + MUTATIONS_PER_ITERATION + " population, " + target.w + "x" + target.h);
   console.log(min/1000000);
   rendering = false;
 };
