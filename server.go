@@ -9,6 +9,7 @@ import (
 	_ "image/png"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -17,12 +18,18 @@ import (
 
 var urlArg = regexp.MustCompile("url=(.*)")
 
-type imgResponse struct {
-	W, H int
-	Rgb  rgbArray
-}
+/**************
+ * Color code *
+ **************/
 
-type rgbArray []uint8
+type color [3]uint8
+
+func (c1 color) dist(c2 color) int {
+	sum := math.Abs(float64(int(c1[0]) - int(c2[0])))
+	sum += math.Abs(float64(int(c1[1]) - int(c2[1])))
+	sum += math.Abs(float64(int(c1[2]) - int(c2[2])))
+	return int(sum)
+}
 
 func (u rgbArray) MarshalJSON() ([]byte, error) {
 	var result string
@@ -33,6 +40,91 @@ func (u rgbArray) MarshalJSON() ([]byte, error) {
 	}
 	return []byte(result), nil
 }
+
+/***************
+ * Canvas code *
+ *************/
+
+// A HTML5 Canvas style representation of pixel data.
+type flatCanvas struct {
+	W, H int
+	Rgb  rgbArray
+}
+type rgbArray []uint8
+
+// Represents an image as a pixel grid.
+type Canvas struct {
+	W, H int
+	Rgb  [][]color
+}
+
+// Makes a new w by h canvas with color (r,g,b).
+func CanvasBuilder(w, h int, r, g, b uint8) Canvas {
+	rgb := make([][]color, h)
+	for j := 0; j < h; j++ {
+		rgb[j] = make([]color, w)
+		for i := 0; i < w; i++ {
+			rgb[j][i] = [3]uint8{r, g, b}
+		}
+	}
+	return Canvas{w, h, rgb}
+}
+
+// Colors a subrect (x,y,w,h) in the canvas to color (r,g,b).
+func (c *Canvas) mutate(x, y, w, h int, r, g, b uint8) error {
+
+	// Check the mutated region fits inside the canvas.
+	if x+w > c.W {
+		return fmt.Errorf("Mutation from %v, width %v in rect of width %v", x, w, c.W)
+	}
+	if y+h > c.H {
+		return fmt.Errorf("Mutation from %v, height %v in rect of height %v", y, h, c.H)
+	}
+
+	// Fill in the coloured region.
+	for i := x; i < w+x; i++ {
+		for j := y; j < h+y; j++ {
+			c.Rgb[i][j] = color{r, g, b}
+		}
+	}
+	return nil
+}
+
+// Returns the pixelwise distance between two canvases.
+func (c *Canvas) dist(other Canvas) (int, error) {
+	// Check the two canvases are the same size
+	if c.W != other.W || c.H != other.H {
+		return 0, fmt.Errorf("Can't compare canvases %v.%v and %v.%v", c.W, c.H, other.W, other.H)
+	}
+	sum := 0
+	for i := 0; i < c.W; i++ {
+		for j := 0; j < c.H; j++ {
+			sum += c.Rgb[i][j].dist(other.Rgb[i][j])
+		}
+	}
+	return sum, nil
+}
+
+// Returns the pixelwise distance between this canvas with a mutation and a second canvas of the same size.
+func (c *Canvas) distWithMutation(other Canvas, cachedScore, x, y, w, h int, r, g, b uint8) (int, error) {
+
+	// Check the mutated region fits inside the canvas.
+	if x+w > c.W {
+		return 0, fmt.Errorf("Mutation from %v, width %v in rect of width %v", x, w, c.W)
+	}
+	if y+h > c.H {
+		return 0, fmt.Errorf("Mutation from %v, height %v in rect of height %v", y, h, c.H)
+	}
+	// Check the two canvases are the same size
+	if c.W != other.W || c.H != other.H {
+		return 0, fmt.Errorf("Can't compare canvases %v.%v and %v.%v", c.W, c.H, other.W, other.H)
+	}
+	return 0, nil
+}
+
+/**************
+ * Server code *
+ **************/
 
 // Returns the url query parameter
 // e.g. in /remote/img?url=wwww.google.com, returns www.google.com
@@ -78,7 +170,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonStr)
 }
 
-func decode(imgfile io.ReadCloser) *imgResponse {
+func decode(imgfile io.ReadCloser) *flatCanvas {
 	// Decode the image
 	img, _, err := image.Decode(imgfile)
 	if err != nil {
@@ -99,7 +191,7 @@ func decode(imgfile io.ReadCloser) *imgResponse {
 		}
 	}
 
-	data := imgResponse{w, h, rgb}
+	data := flatCanvas{w, h, rgb}
 	return &data
 }
 
