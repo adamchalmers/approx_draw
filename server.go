@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	_ "image/gif"
+	_ "image/jpeg"
 	_ "image/png"
+	"io"
 	"log"
 	"net/http"
-	"os"
+	"net/url"
 	"regexp"
 	"strings"
 )
@@ -31,23 +34,41 @@ func (u rgbArray) MarshalJSON() ([]byte, error) {
 	return []byte(result), nil
 }
 
+// Returns the url query parameter
+// e.g. in /remote/img?url=wwww.google.com, returns www.google.com
+func urlParam(r *http.Request) string {
+	m := urlArg.FindStringSubmatch(r.URL.String())
+	if m == nil || len(m) < 1 {
+		log.Fatal("Invalid regex.", r.URL.String())
+	}
+	if _, err := url.Parse(m[1]); err != nil {
+		log.Println("Invalid url", m[1])
+		return ""
+	}
+	return m[1]
+}
+
+func remoteHandler(w http.ResponseWriter, r *http.Request) {
+	url := urlParam(r)
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte("err"))
+	}
+	defer resp.Body.Close()
+	io.Copy(w, resp.Body)
+}
+
 func imageHandler(w http.ResponseWriter, r *http.Request) {
 	// Extract the image URL from the request
-	m := urlArg.FindStringSubmatch(r.URL.String())
-	if m == nil {
-		fmt.Println("Invalid regex.")
-		return
-	}
-
-	// Open the image
-	imgfile, err := os.Open("./" + m[1])
+	url := urlParam(r)
+	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Println("Can't find", m[1])
-		return
+		log.Fatal(err)
 	}
-	defer imgfile.Close()
-
-	data := decode(imgfile)
+	defer resp.Body.Close()
+	// Open the image
+	data := decode(resp.Body)
 	jsonStr, err := json.Marshal(data)
 	if err != nil {
 		log.Fatal(err)
@@ -57,7 +78,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonStr)
 }
 
-func decode(imgfile *os.File) *imgResponse {
+func decode(imgfile io.ReadCloser) *imgResponse {
 	// Decode the image
 	img, _, err := image.Decode(imgfile)
 	if err != nil {
@@ -66,8 +87,8 @@ func decode(imgfile *os.File) *imgResponse {
 
 	// Extract color data from the decoded image
 	bounds := img.Bounds()
-	w := bounds.Max.X - bounds.Min.X
-	h := bounds.Max.Y - bounds.Min.Y
+	w := bounds.Dx()
+	h := bounds.Dy()
 	rgb := make(rgbArray, 0)
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
@@ -92,6 +113,7 @@ func main() {
 
 	http.HandleFunc("/", fileHandler)
 	http.HandleFunc("/image/", imageHandler)
+	http.HandleFunc("/remote/", remoteHandler)
 	err := http.ListenAndServe(port, nil)
 	if err != nil {
 		log.Fatal(err)

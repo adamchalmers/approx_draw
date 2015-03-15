@@ -3,9 +3,10 @@
 
   <p><a href="tests.html">Tests</a></p>
   <button id="start">Render</button>
+  <input type="text" value="https://i.imgur.com/t0XRVO0.png" id="imgUrl">
   <div class="container">
     <canvas id="canvas" width="1" height="1" style="border:1px solid black"></canvas>
-    <canvas id="photo" width="1" height="1" style="border:1px solid black"></canvas>
+    <img id="target-image">
     <p id="time-info"></p>
   </div>
 
@@ -13,18 +14,20 @@
   <script src="scripts/rect.js"></script>
   <script src="scripts/main.js"></script>
   <script>
+    rendering = false;
     ITERATIONS = 20;
-    MUTATIONS_PER_ITERATION = 2000;
+    MUTATIONS_PER_ITERATION = 1000;
     $("#start").on("click", function() {
-      var imgUrl = "img/monalisa.png";
-      //var imgUrl = "https://i.imgur.com/t0XRVO0.png";
-      $('.container').append('<img src="' + imgUrl + '" id="target-image">');
-      var img = $("#target-image").css("height", "auto").css("width", "auto").hide();
-      img[0].crossOrigin = "Anonymous";
-      img.load(function() {
-        init(ITERATIONS, MUTATIONS_PER_ITERATION, img);
-      })
-    })
+      if (!rendering) {
+        rendering = true;
+        var dataPrefix = "/image/img?url=";
+        var filePrefix = "/remote/img?url=";
+        var imgUrl = $("#imgUrl").val();
+        var img = $("#target-image").attr("src", filePrefix + imgUrl).css("height", "auto").css("width", "auto");
+        console.log("Rendering", imgUrl);
+        init(ITERATIONS, MUTATIONS_PER_ITERATION, img, dataPrefix+imgUrl);
+      }
+    });
 
   </script>
 

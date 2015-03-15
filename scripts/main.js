@@ -1,22 +1,21 @@
-init = function(ITERATIONS, MUTATIONS_PER_ITERATION, IMG) {
+init = function(ITERATIONS, MUTATIONS_PER_ITERATION, IMG, url) {
   CANVAS = $("#canvas")[0].getContext("2d");
   TILE_WIDTH = 1;
   TILE_HEIGHT = 1;
 
-  var results = loadImage(IMG, function(target, colorsInPicture) {
+  var results = loadImage(IMG, url, function(target, colorsArray) {
     $("#canvas").attr("width", target.w);
     $("#canvas").attr("height", target.h);
     var approxImage = new Rect(target.w, target.h, 0, 0, 0);
     draw(approxImage, CANVAS);
     window.setTimeout(function() {
-      approximateImage(target, colorsInPicture);
+      approximateImage(target, colorsArray);
     }, 1000);
   });
 }
 
-approximateImage = function(target, colorsInPicture) {
-
-  console.log(target);
+// target is a Rect, colorsArray is an array of colors.
+approximateImage = function(target, colorsArray) {
 
   // Start off our approximation with a white rectangle.
   var approxImage = new Rect(target.w, target.h, 255, 255, 255);
@@ -36,7 +35,7 @@ approximateImage = function(target, colorsInPicture) {
       var h = rnd(0, approxImage.h);
       var x = rnd(0, target.w-w);
       var y = rnd(0, target.h-h);
-      var color = colorsInPicture[rnd(0, colorsInPicture.length)];
+      var color = colorsArray[rnd(0, colorsArray.length)];
 
       // Score the mutation
       var score = approxImage.scoreWithMutation(x, y, w, h, color, target, cachedScore);
@@ -55,6 +54,7 @@ approximateImage = function(target, colorsInPicture) {
   draw(approxImage, CANVAS);
   $("#time-info").text(timeTaken + " seconds, " + ITERATIONS + " rectangles, " + MUTATIONS_PER_ITERATION + " population, " + target.w + "x" + target.h);
   console.log(min/1000000);
+  rendering = false;
 };
 
 // Draw a rectangle using a canvas 2d context.
@@ -71,30 +71,18 @@ draw = function(rect, ctx) {
   }
 };
 
-// Loads the image from the DOM into a Rect object.
-loadImage = function(IMG, callback) {
-  var canvas = $('#photo')[0];
-  var img = IMG[0];
-
-  // Draw the image into the canvas
-  canvas.width = img.width;
-  canvas.height = img.height;
-  var ctx = canvas.getContext('2d');
-  ctx.drawImage(img, 0, 0, img.width, img.height);
-  var data = ctx.getImageData(0, 0, $('#photo').attr('width'), $('#photo').attr('height'));
-  return unpackImage(data, img, ctx, callback);
-}
-
-unpackImage = function(data, img, ctx, callback) {
-  var colorsInPicture = {};
+loadImage = function(data, url, callback) {
+  var colorsArray = {};
   var colorsObject = [];
+  var ctx = canvas.getContext('2d');
 
   // Set up a rectangle with the pixel data from the image.
-  $.get("image/img?url=img/monalisa.png", function(_data) {
+  $.get(url, function(_data) {
     data = JSON.parse(_data);
     var rgb = data.Rgb
     var w = data.W
     var h = data.H
+
     var rect = new Rect(w, h, 0, 0, 0);
 
     // Loop over the rgb array, unpack into Colors.
@@ -105,13 +93,12 @@ unpackImage = function(data, img, ctx, callback) {
         var b = rgb[((w * y) + x) * 3 + 2];
         var color = new Color(r, g, b);
         rect.set(x, y, color);
-        if (!colorsInPicture[color.hex]) {
-          colorsInPicture[color.hex] = true;
+        if (!colorsArray[color.hex]) {
+          colorsArray[color.hex] = true;
           colorsObject.push(color);
         }
       }
     }
-    draw(rect, ctx);
     callback(rect, colorsObject);
   });
 }
