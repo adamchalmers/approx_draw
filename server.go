@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"image"
 	_ "image/png"
@@ -8,9 +9,27 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strings"
 )
 
 var urlArg = regexp.MustCompile("url=(.*)")
+
+type imgResponse struct {
+	W, H int
+	Rgb  rgbArray
+}
+
+type rgbArray []uint8
+
+func (u rgbArray) MarshalJSON() ([]byte, error) {
+	var result string
+	if u == nil {
+		result = "null"
+	} else {
+		result = strings.Join(strings.Fields(fmt.Sprintf("%d", u)), ",")
+	}
+	return []byte(result), nil
+}
 
 func imageHandler(w http.ResponseWriter, r *http.Request) {
 	// Extract the image URL from the request
@@ -28,6 +47,17 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer imgfile.Close()
 
+	data := decode(imgfile)
+	jsonStr, err := json.Marshal(data)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	// Return this data.
+	w.Write(jsonStr)
+}
+
+func decode(imgfile *os.File) *imgResponse {
 	// Decode the image
 	img, _, err := image.Decode(imgfile)
 	if err != nil {
@@ -36,18 +66,20 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Extract color data from the decoded image
 	bounds := img.Bounds()
-	rgba := ""
+	w := bounds.Max.X - bounds.Min.X
+	h := bounds.Max.Y - bounds.Min.Y
+	rgb := make(rgbArray, 0)
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			r, g, b, a := img.At(x, y).RGBA()
-			rgba += fmt.Sprintf("[%v, %v, %v, %v],", r, g, b, a)
+			r, g, b, _ := img.At(x, y).RGBA()
+			rgb = append(rgb, uint8(r))
+			rgb = append(rgb, uint8(g))
+			rgb = append(rgb, uint8(b))
 		}
 	}
 
-	// Return this data.
-	b := make([]byte, len(rgba))
-	copy(b, rgba)
-	w.Write(b)
+	data := imgResponse{w, h, rgb}
+	return &data
 }
 
 func fileHandler(w http.ResponseWriter, r *http.Request) {

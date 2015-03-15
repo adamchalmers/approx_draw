@@ -16,8 +16,8 @@
     ITERATIONS = 20;
     MUTATIONS_PER_ITERATION = 2000;
     $("#start").on("click", function() {
-      //var imgUrl = "img/monalisa.png";
-      var imgUrl = "https://i.imgur.com/t0XRVO0.png";
+      var imgUrl = "img/monalisa.png";
+      //var imgUrl = "https://i.imgur.com/t0XRVO0.png";
       $('.container').append('<img src="' + imgUrl + '" id="target-image">');
       var img = $("#target-image").css("height", "auto").css("width", "auto").hide();
       img[0].crossOrigin = "Anonymous";
@@ -26,18 +26,6 @@
       })
     })
 
-    img.onload = function() {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage( img, 0, 0 );
-      localStorage.setItem( "savedImageData", canvas.toDataURL("image/png") );
-    }
-    img.src = src;
-    // make sure the load event fires for cached images too
-    if ( img.complete || img.complete === undefined ) {
-      img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
-      img.src = src;
-    }
   </script>
 
 </body>

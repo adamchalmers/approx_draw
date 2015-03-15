@@ -3,19 +3,20 @@ init = function(ITERATIONS, MUTATIONS_PER_ITERATION, IMG) {
   TILE_WIDTH = 1;
   TILE_HEIGHT = 1;
 
-  var results = loadImage(IMG);
-  var target = results[0];
-  var colorsInPicture = results[1];
-  $("#canvas").attr("width", target.w);
-  $("#canvas").attr("height", target.h);
-  var approxImage = new Rect(target.w, target.h, 0, 0, 0);
-  draw(approxImage, CANVAS);
-  window.setTimeout(function() {
-    approximateImage(target, colorsInPicture);
-  }, 1000);
+  var results = loadImage(IMG, function(target, colorsInPicture) {
+    $("#canvas").attr("width", target.w);
+    $("#canvas").attr("height", target.h);
+    var approxImage = new Rect(target.w, target.h, 0, 0, 0);
+    draw(approxImage, CANVAS);
+    window.setTimeout(function() {
+      approximateImage(target, colorsInPicture);
+    }, 1000);
+  });
 }
 
 approximateImage = function(target, colorsInPicture) {
+
+  console.log(target);
 
   // Start off our approximation with a white rectangle.
   var approxImage = new Rect(target.w, target.h, 255, 255, 255);
@@ -71,9 +72,9 @@ draw = function(rect, ctx) {
 };
 
 // Loads the image from the DOM into a Rect object.
-loadImage = function(IMG) {
-  var img = IMG[0];
+loadImage = function(IMG, callback) {
   var canvas = $('#photo')[0];
+  var img = IMG[0];
 
   // Draw the image into the canvas
   canvas.width = img.width;
@@ -81,26 +82,36 @@ loadImage = function(IMG) {
   var ctx = canvas.getContext('2d');
   ctx.drawImage(img, 0, 0, img.width, img.height);
   var data = ctx.getImageData(0, 0, $('#photo').attr('width'), $('#photo').attr('height'));
+  return unpackImage(data, img, ctx, callback);
+}
 
+unpackImage = function(data, img, ctx, callback) {
   var colorsInPicture = {};
-  colorsObject = [];
+  var colorsObject = [];
 
   // Set up a rectangle with the pixel data from the image.
-  var rect = new Rect(data.width, data.height, 0, 0, 0);
-  for(var y = 0; y < img.height; y++) {
-    for(var x = 0; x < img.width; x++) {
-      var r = data.data[((img.width * y) + x) * 4];
-      var g = data.data[((img.width * y) + x) * 4 + 1];
-      var b = data.data[((img.width * y) + x) * 4 + 2];
-      var color = new Color(r, g, b);
-      rect.set(x, y, color);
-      if (!colorsInPicture[color.hex]) {
-        colorsInPicture[color.hex] = true;
-        colorsObject.push(color);
+  $.get("image/img?url=img/monalisa.png", function(_data) {
+    data = JSON.parse(_data);
+    var rgb = data.Rgb
+    var w = data.W
+    var h = data.H
+    var rect = new Rect(w, h, 0, 0, 0);
+
+    // Loop over the rgb array, unpack into Colors.
+    for(var y = 0; y < h; y++) {
+      for(var x = 0; x < w; x++) {
+        var r = rgb[((w * y) + x) * 3];
+        var g = rgb[((w * y) + x) * 3 + 1];
+        var b = rgb[((w * y) + x) * 3 + 2];
+        var color = new Color(r, g, b);
+        rect.set(x, y, color);
+        if (!colorsInPicture[color.hex]) {
+          colorsInPicture[color.hex] = true;
+          colorsObject.push(color);
+        }
       }
     }
-  }
-  console.log(colorsInPicture);
-  draw(rect, ctx);
-  return [rect, colorsObject];
+    draw(rect, ctx);
+    callback(rect, colorsObject);
+  });
 }
