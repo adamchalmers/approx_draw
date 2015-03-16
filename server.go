@@ -154,8 +154,9 @@ func imgDistMutated(img, other *image.RGBA, cachedScore, x, y, w, h int, rgba co
 	for i := x; i < x+w; i++ {
 		for j := y; j < y+h; j++ {
 			// Subtract the original color's score, add the mutated color's score.
-			score -= colorDist(other.At(i, j), img.At(i, j))
-			score += colorDist(other.At(i, j), rgba)
+			col := other.At(i, j)
+			score -= colorDist(col, img.At(i, j))
+			score += colorDist(col, rgba)
 		}
 	}
 	return score, nil
