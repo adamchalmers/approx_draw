@@ -83,6 +83,9 @@ func approximate(target *image.RGBA) (*image.RGBA, int) {
 	return approx, score
 }
 
+// Returns a slice containing all colors used in the image, and
+// a map from each point/pixel in the image to its color.
+// looking up colors in this map is 100x faster than using img.at again.
 func colorsIn(img *image.RGBA) ([]color.RGBA, map[image.Point]color.RGBA) {
 	colsList := make([]color.RGBA, 1000)
 	cols := make(map[color.RGBA]bool)
