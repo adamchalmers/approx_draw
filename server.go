@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	"image/color"
 	_ "image/gif"
 	_ "image/jpeg"
-	_ "image/png"
+	"image/png"
 	"io"
 	"log"
 	"math"
@@ -22,13 +23,17 @@ var urlArg = regexp.MustCompile("url=(.*)")
  * Color code *
  **************/
 
-type color [3]uint8
+type rgb color.RGBA
 
-func (c1 color) dist(c2 color) int {
-	sum := math.Abs(float64(int(c1[0]) - int(c2[0])))
-	sum += math.Abs(float64(int(c1[1]) - int(c2[1])))
-	sum += math.Abs(float64(int(c1[2]) - int(c2[2])))
+func (c1 rgb) dist(c2 rgb) int {
+	sum := math.Abs(float64(int(c1.R) - int(c2.R)))
+	sum += math.Abs(float64(int(c1.B) - int(c2.B)))
+	sum += math.Abs(float64(int(c1.G) - int(c2.G)))
 	return int(sum)
+}
+
+func (c rgb) RGBA() (r, g, b, a uint32) {
+	return uint32(c.R), uint32(c.G), uint32(c.B), uint32(c.A)
 }
 
 func (u rgbArray) MarshalJSON() ([]byte, error) {
@@ -55,19 +60,33 @@ type rgbArray []uint8
 // Represents an image as a pixel grid.
 type Canvas struct {
 	W, H int
-	Rgb  [][]color
+	Rgb  [][]rgb
 }
 
 // Makes a new w by h canvas with color (r,g,b).
 func CanvasBuilder(w, h int, r, g, b uint8) Canvas {
-	rgb := make([][]color, h)
+	pixels := make([][]rgb, h)
 	for j := 0; j < h; j++ {
-		rgb[j] = make([]color, w)
+		pixels[j] = make([]rgb, w)
 		for i := 0; i < w; i++ {
-			rgb[j][i] = [3]uint8{r, g, b}
+			pixels[j][i] = rgb{r, g, b, 255}
 		}
 	}
-	return Canvas{w, h, rgb}
+	return Canvas{w, h, pixels}
+}
+
+func (c Canvas) ColorModel() color.Model {
+	return color.RGBAModel
+}
+
+func (c Canvas) Bounds() image.Rectangle {
+	return image.Rect(0, 0, c.W, c.H)
+}
+
+func (c Canvas) At(x, y int) color.Color {
+	col := c.Rgb[y][x]
+	fmt.Println(col.A)
+	return col
 }
 
 // Colors a subrect (x,y,w,h) in the canvas to color (r,g,b).
@@ -84,7 +103,7 @@ func (c *Canvas) mutate(x, y, w, h int, r, g, b uint8) error {
 	// Fill in the coloured region.
 	for i := x; i < w+x; i++ {
 		for j := y; j < h+y; j++ {
-			c.Rgb[i][j] = color{r, g, b}
+			c.Rgb[i][j] = rgb{r, g, b, 255}
 		}
 	}
 	return nil
@@ -109,11 +128,8 @@ func (c *Canvas) dist(other Canvas) (int, error) {
 func (c *Canvas) distWithMutation(other Canvas, cachedScore, x, y, w, h int, r, g, b uint8) (int, error) {
 
 	// Check the mutated region fits inside the canvas.
-	if x+w > c.W {
-		return 0, fmt.Errorf("Mutation from %v, width %v in rect of width %v", x, w, c.W)
-	}
-	if y+h > c.H {
-		return 0, fmt.Errorf("Mutation from %v, height %v in rect of height %v", y, h, c.H)
+	if x+w > c.W || y+h > c.H {
+		return 0, fmt.Errorf("Mutation won't fit.", x, w, c.W)
 	}
 	// Check the two canvases are the same size
 	if c.W != other.W || c.H != other.H {
@@ -149,6 +165,21 @@ func remoteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 	io.Copy(w, resp.Body)
+}
+
+func testHandler(w http.ResponseWriter, r *http.Request) {
+	canvas := CanvasBuilder(20, 20, 150, 200, 255)
+	//canvas := image.NewRGBA(image.Rect(0, 0, 30, 30))
+	for x := 0; x < 30; x++ {
+		for y := 0; y < 30; y++ {
+			//canvas.SetRGBA(x, y, color.RGBA{0, 0, 255, 255})
+		}
+	}
+	err := png.Encode(w, canvas)
+	if err != nil {
+		w.Write([]byte("Encoding error."))
+		fmt.Println(err)
+	}
 }
 
 func imageHandler(w http.ResponseWriter, r *http.Request) {
@@ -206,6 +237,7 @@ func main() {
 	http.HandleFunc("/", fileHandler)
 	http.HandleFunc("/image/", imageHandler)
 	http.HandleFunc("/remote/", remoteHandler)
+	http.HandleFunc("/test/", testHandler)
 	err := http.ListenAndServe(port, nil)
 	if err != nil {
 		log.Fatal(err)

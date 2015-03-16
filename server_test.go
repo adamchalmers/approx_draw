@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/stretchr/testify/assert"
+	"image"
 	"testing"
 )
 
@@ -23,10 +24,10 @@ func TestCanvasBuilder(t *testing.T) {
 	assert.Equal(t, 2, len(c.Rgb))
 	assert.Equal(t, 2, len(c.Rgb[0]))
 	// Check all pixels have the expected color.
-	assert.Equal(t, color{100, 150, 200}, c.Rgb[0][0])
-	assert.Equal(t, color{100, 150, 200}, c.Rgb[0][1])
-	assert.Equal(t, color{100, 150, 200}, c.Rgb[1][0])
-	assert.Equal(t, color{100, 150, 200}, c.Rgb[1][1])
+	assert.Equal(t, rgb{100, 150, 200, 255}, c.Rgb[0][0])
+	assert.Equal(t, rgb{100, 150, 200, 255}, c.Rgb[0][1])
+	assert.Equal(t, rgb{100, 150, 200, 255}, c.Rgb[1][0])
+	assert.Equal(t, rgb{100, 150, 200, 255}, c.Rgb[1][1])
 }
 
 func TestMutateCanvas(t *testing.T) {
@@ -34,10 +35,10 @@ func TestMutateCanvas(t *testing.T) {
 	c := CanvasBuilder(2, 2, 0, 0, 0)
 	err := c.mutate(1, 1, 1, 1, 255, 255, 255)
 	assert.Nil(t, err)
-	assert.Equal(t, color{0, 0, 0}, c.Rgb[0][0])
-	assert.Equal(t, color{0, 0, 0}, c.Rgb[0][1])
-	assert.Equal(t, color{0, 0, 0}, c.Rgb[1][0])
-	assert.Equal(t, color{255, 255, 255}, c.Rgb[1][1])
+	assert.Equal(t, rgb{0, 0, 0, 255}, c.Rgb[0][0])
+	assert.Equal(t, rgb{0, 0, 0, 255}, c.Rgb[0][1])
+	assert.Equal(t, rgb{0, 0, 0, 255}, c.Rgb[1][0])
+	assert.Equal(t, rgb{255, 255, 255, 255}, c.Rgb[1][1])
 }
 
 func TestFailedMutateCanvas(t *testing.T) {
@@ -46,15 +47,15 @@ func TestFailedMutateCanvas(t *testing.T) {
 	assert.NotNil(t, errWide)
 	errHigh := c.mutate(1, 1, 4, 1, 255, 255, 255)
 	assert.NotNil(t, errHigh)
-	assert.Equal(t, color{0, 0, 0}, c.Rgb[0][0])
-	assert.Equal(t, color{0, 0, 0}, c.Rgb[0][1])
-	assert.Equal(t, color{0, 0, 0}, c.Rgb[1][0])
-	assert.Equal(t, color{0, 0, 0}, c.Rgb[1][1])
+	assert.Equal(t, rgb{0, 0, 0, 255}, c.Rgb[0][0])
+	assert.Equal(t, rgb{0, 0, 0, 255}, c.Rgb[0][1])
+	assert.Equal(t, rgb{0, 0, 0, 255}, c.Rgb[1][0])
+	assert.Equal(t, rgb{0, 0, 0, 255}, c.Rgb[1][1])
 }
 
-func TestColorDist(t *testing.T) {
-	black := color{0, 0, 0}
-	grey := color{100, 110, 120}
+func TestRgbDist(t *testing.T) {
+	black := rgb{0, 0, 0, 255}
+	grey := rgb{100, 110, 120, 255}
 	assert.Equal(t, 330, black.dist(grey))
 	assert.Equal(t, 330, grey.dist(black))
 }
@@ -88,4 +89,18 @@ func TestCanvasDist(t *testing.T) {
 	score2, err2 := c1.dist(c2)
 	assert.Nil(t, err2)
 	assert.Equal(t, 1200, score2)
+}
+
+func TestRgb(t *testing.T) {
+	col := rgb{0, 50, 100, 255}
+	r, g, b, a := col.RGBA()
+	assert.Equal(t, uint8(0), r)
+	assert.Equal(t, uint8(50), g)
+	assert.Equal(t, uint8(100), b)
+	assert.Equal(t, uint8(255), a)
+}
+
+func TestCanvasBounds(t *testing.T) {
+	c := CanvasBuilder(2, 2, 0, 0, 0)
+	assert.Equal(t, image.Rect(0, 0, 2, 2), c.Bounds())
 }
