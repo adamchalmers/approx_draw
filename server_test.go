@@ -7,6 +7,22 @@ import (
 	"testing"
 )
 
+func blackBox(t *testing.T) (*image.RGBA, color.RGBA) {
+	img := image.NewRGBA(image.Rect(0, 0, 2, 2))
+	black := color.RGBA{0, 0, 0, 255}
+	err := mutate(img, mutation{0, 0, 2, 2, black})
+	assert.Nil(t, err)
+	return img, black
+}
+
+func whiteBox(t *testing.T) (*image.RGBA, color.RGBA) {
+	img := image.NewRGBA(image.Rect(0, 0, 2, 2))
+	white := color.RGBA{255, 255, 255, 255}
+	err := mutate(img, mutation{0, 0, 2, 2, white})
+	assert.Nil(t, err)
+	return img, white
+}
+
 func TestCanary(t *testing.T) {
 	assert.True(t, true, "True is true!")
 }
@@ -14,11 +30,7 @@ func TestCanary(t *testing.T) {
 func TestMutate(t *testing.T) {
 
 	// Make a 2x2 black square.
-	img := image.NewRGBA(image.Rect(0, 0, 2, 2))
-	black := color.RGBA{0, 0, 0, 255}
-	err := mutate(img, 0, 0, 2, 2, black)
-	assert.Nil(t, err)
-
+	img, black := blackBox(t)
 	// Check all four pixels are really black.
 	assert.Equal(t, black, img.At(0, 0))
 	assert.Equal(t, black, img.At(0, 1))
@@ -27,7 +39,7 @@ func TestMutate(t *testing.T) {
 
 	// Mutate the bottom-right square white and check it.
 	white := color.RGBA{255, 255, 255, 255}
-	errr := mutate(img, 1, 1, 1, 1, white)
+	errr := mutate(img, mutation{1, 1, 1, 1, white})
 	assert.Nil(t, errr)
 	assert.Equal(t, black, img.At(0, 0))
 	assert.Equal(t, black, img.At(0, 1))
@@ -36,11 +48,10 @@ func TestMutate(t *testing.T) {
 }
 
 func TestFailedMutateCanvas(t *testing.T) {
-	img := image.NewRGBA(image.Rect(0, 0, 2, 2))
-	black := color.RGBA{0, 0, 0, 255}
-	errWide := mutate(img, 1, 1, 1, 4, black)
+	img, black := blackBox(t)
+	errWide := mutate(img, mutation{1, 1, 1, 4, black})
 	assert.NotNil(t, errWide)
-	errHigh := mutate(img, 1, 1, 4, 1, black)
+	errHigh := mutate(img, mutation{1, 1, 4, 1, black})
 	assert.NotNil(t, errHigh)
 }
 
@@ -52,10 +63,9 @@ func TestColorDist(t *testing.T) {
 }
 
 func TestImgDistMutationErrors(t *testing.T) {
-	img := image.NewRGBA(image.Rect(0, 0, 2, 2))
+	img, black := blackBox(t)
 	imgWide := image.NewRGBA(image.Rect(0, 0, 2, 3))
 	imgHigh := image.NewRGBA(image.Rect(0, 0, 3, 2))
-	black := color.RGBA{0, 0, 0, 255}
 
 	// Ensure distWithMutation errors when comparing different-sized canvases.
 	// imgDistMutated(img, other image.RGBA, cachedScore, x, y, w, h int, rgba color.RGBA)
@@ -71,15 +81,23 @@ func TestImgDistMutationErrors(t *testing.T) {
 	assert.NotNil(t, errHigh)
 }
 
-func TestImgDist(t *testing.T) {
-	imgBlack := image.NewRGBA(image.Rect(0, 0, 2, 2))
-	imgWhite := image.NewRGBA(image.Rect(0, 0, 2, 2))
-	black := color.RGBA{0, 0, 0, 255}
-	white := color.RGBA{255, 255, 255, 255}
-	err := mutate(imgBlack, 0, 0, 2, 2, black)
-	errr := mutate(imgWhite, 0, 0, 2, 2, white)
+func TestImgDistMutation(t *testing.T) {
+	imgBlack, _ := blackBox(t)
+	imgWhite, white := whiteBox(t)
+	score, err := imgDist(imgBlack, imgWhite)
 	assert.Nil(t, err)
-	assert.Nil(t, errr)
+	tryScore, err := imgDistMutated(imgBlack, imgWhite, score, 1, 1, 1, 1, white)
+	assert.Nil(t, err)
+	expected := 255 * 3 * 3
+	assert.Equal(t, expected, tryScore)
+}
+
+func TestImgDist(t *testing.T) {
+	imgBlack, _ := blackBox(t)
+	imgWhite := image.NewRGBA(image.Rect(0, 0, 2, 2))
+	white := color.RGBA{255, 255, 255, 255}
+	err := mutate(imgWhite, mutation{0, 0, 2, 2, white})
+	assert.Nil(t, err)
 
 	expected := 255 * 3 * 4
 

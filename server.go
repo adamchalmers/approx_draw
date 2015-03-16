@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -17,36 +18,101 @@ import (
 
 var urlArg = regexp.MustCompile("url=(.*)")
 
+const (
+	ITERATIONS = 10
+	TRIES      = 100
+)
+
 /**************
- * Color code *
+ * Image code *
  **************/
 
+type mutation struct {
+	x, y, w, h int
+	rgb        color.RGBA
+}
+
+// Returns an image which approximately recreates the input image.
+func approximate(target *image.RGBA) (*image.RGBA, int) {
+
+	// Start with a white background.
+	approx := image.NewRGBA(target.Bounds())
+	imgW := approx.Bounds().Dx()
+	imgH := approx.Bounds().Dy()
+	start := mutation{0, 0, imgW, imgH, color.RGBA{255, 255, 255, 255}}
+	colors := colorsIn(target)
+	mutate(approx, start)
+
+	// Loop
+	score, err := imgDist(target, approx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for i := 0; i < ITERATIONS; i++ {
+		cachedScore := score
+		fmt.Println(cachedScore)
+		var bestMutation mutation
+		for try := 0; try < TRIES; try++ {
+
+			// Generate a mutation
+			w := rand.Intn(imgW)
+			h := rand.Intn(imgH)
+			x := rand.Intn(imgW - w)
+			y := rand.Intn(imgH - h)
+			rgb := colors[rand.Intn(len(colors))]
+
+			// Save this mutation if it's the best.
+			tryScore, err := imgDistMutated(approx, target, cachedScore, x, y, w, h, rgb)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if tryScore < score {
+				score = tryScore
+				bestMutation = mutation{x, y, w, h, rgb}
+			}
+
+		} // end tries
+		mutate(approx, bestMutation)
+	} // end iterations
+	return approx, score
+}
+
+func colorsIn(img *image.RGBA) []color.RGBA {
+	colsList := make([]color.RGBA, 1000)
+	cols := make(map[color.RGBA]bool)
+	for x := img.Bounds().Min.X; x < img.Bounds().Max.X; x++ {
+		for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
+			color := img.At(x, y).(color.RGBA)
+			if _, prs := cols[color]; !prs {
+				cols[color] = true
+				colsList = append(colsList, color)
+			}
+		}
+	}
+	return colsList
+}
+
+// RGB distance between two colors.
 func colorDist(_c1, _c2 color.Color) int {
 	c1, c2 := _c1.(color.RGBA), _c2.(color.RGBA)
 	sum := math.Abs(float64(c1.R) - float64(c2.R))
-	//fmt.Println(float64(r1), float64(r2), float64(r1)-float64(r2))
-	//fmt.Println(r1, float64(r1))
 	sum += math.Abs(float64(c1.G) - float64(c2.G))
 	sum += math.Abs(float64(c1.B) - float64(c2.B))
 	return int(sum)
 }
 
-/***************
- * Canvas code *
- *************/
-
 // Colors a subrect (x,y,w,h) in the canvas to color (r,g,b).
-func mutate(img *image.RGBA, x, y, w, h int, rgba color.RGBA) error {
+func mutate(img *image.RGBA, m mutation) error {
 
 	// Check the mutated region fits inside the canvas.
-	if x+w > img.Bounds().Dx() || y+h > img.Bounds().Dy() {
+	if m.x+m.w > img.Bounds().Dx() || m.y+m.h > img.Bounds().Dy() {
 		return fmt.Errorf("Invalid mutation size.")
 	}
 
 	// Fill in the coloured region.
-	for i := x; i < w+x; i++ {
-		for j := y; j < h+y; j++ {
-			img.SetRGBA(i, j, rgba)
+	for i := m.x; i < m.w+m.x; i++ {
+		for j := m.y; j < m.h+m.y; j++ {
+			img.SetRGBA(i, j, m.rgb)
 		}
 	}
 	return nil
@@ -78,7 +144,15 @@ func imgDistMutated(img, other *image.RGBA, cachedScore, x, y, w, h int, rgba co
 	if img.Bounds() != other.Bounds() {
 		return 0, fmt.Errorf("Can't compare different-sized canvases.")
 	}
-	return 0, nil
+	score := cachedScore
+	for i := x; i < x+w; i++ {
+		for j := y; j < y+h; j++ {
+			// Subtract the original color's score, add the mutated color's score.
+			score -= colorDist(other.At(i, j), img.At(i, j))
+			score += colorDist(other.At(i, j), rgba)
+		}
+	}
+	return score, nil
 }
 
 /**************
@@ -110,18 +184,36 @@ func remoteHandler(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, resp.Body)
 }
 
-func testHandler(w http.ResponseWriter, r *http.Request) {
-	canvas := image.NewRGBA(image.Rect(0, 0, 30, 30))
-	for x := 0; x < 30; x++ {
-		for y := 0; y < 30; y++ {
-			//canvas.SetRGBA(x, y, color.RGBA{0, 0, 255, 255})
+func approxHandler(w http.ResponseWriter, r *http.Request) {
+
+	// read the image data
+	url := urlParam(r)
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte("err"))
+	}
+	defer resp.Body.Close()
+
+	// read the image into target (type image.Image)
+	_target, _, err := image.Decode(resp.Body)
+	if err != nil {
+		w.Write([]byte("err"))
+		fmt.Println(err)
+		return
+	}
+
+	// convert _target (color.Color) to target (color.RGBA)
+	target := image.NewRGBA(_target.Bounds())
+	for x := target.Bounds().Min.X; x < target.Bounds().Max.X; x++ {
+		for y := target.Bounds().Min.Y; y < target.Bounds().Max.Y; y++ {
+			target.Set(x, y, _target.At(x, y))
 		}
 	}
-	err := png.Encode(w, canvas)
-	if err != nil {
-		w.Write([]byte("Encoding error."))
-		fmt.Println(err)
-	}
+
+	approximation, score := approximate(target)
+	fmt.Println(float64(score) / 1000000)
+	png.Encode(w, approximation)
 }
 
 func fileHandler(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +226,7 @@ func main() {
 
 	http.HandleFunc("/", fileHandler)
 	http.HandleFunc("/remote/", remoteHandler)
-	http.HandleFunc("/test/", testHandler)
+	http.HandleFunc("/approx/", approxHandler)
 	err := http.ListenAndServe(port, nil)
 	if err != nil {
 		log.Fatal(err)

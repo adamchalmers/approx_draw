@@ -30,10 +30,11 @@
     $("#start").on("click", function() {
       if (!rendering) {
         rendering = true;
-        var dataPrefix = "/image/img?url=";
-        var filePrefix = "/remote/img?url=";
+        var targetPrefix = "/remote/img?url=";
+        var approxPrefix = "/approx/img?url=";
         var imgUrl = $("#imgUrl").val();
-        var img = $("#target-image").attr("src", filePrefix + imgUrl).css("height", "auto").css("width", "auto");
+        $("#target-image").attr("src", targetPrefix + imgUrl).css("height", "auto").css("width", "auto");
+        $("#approx-image").attr("src", approxPrefix + imgUrl).css("height", "auto").css("width", "auto");
         console.log("Rendering", imgUrl);
       }
     });
