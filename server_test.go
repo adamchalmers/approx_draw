@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/stretchr/testify/assert"
 	"image"
+	"image/color"
 	"testing"
 )
 
@@ -10,97 +11,84 @@ func TestCanary(t *testing.T) {
 	assert.True(t, true, "True is true!")
 }
 
-// Ensure we can build portrait and landscape canvases.
-func TestCanvasBuilderSizes(t *testing.T) {
-	c := CanvasBuilder(2, 1, 0, 0, 0)
-	d := CanvasBuilder(1, 2, 0, 0, 0)
-	assert.NotNil(t, c)
-	assert.NotNil(t, d)
-}
+func TestMutate(t *testing.T) {
 
-func TestCanvasBuilder(t *testing.T) {
-	c := CanvasBuilder(2, 2, 100, 150, 200)
-	// Check canvas is the right dimensions
-	assert.Equal(t, 2, len(c.Rgb))
-	assert.Equal(t, 2, len(c.Rgb[0]))
-	// Check all pixels have the expected color.
-	assert.Equal(t, rgb{100, 150, 200, 255}, c.Rgb[0][0])
-	assert.Equal(t, rgb{100, 150, 200, 255}, c.Rgb[0][1])
-	assert.Equal(t, rgb{100, 150, 200, 255}, c.Rgb[1][0])
-	assert.Equal(t, rgb{100, 150, 200, 255}, c.Rgb[1][1])
-}
-
-func TestMutateCanvas(t *testing.T) {
-	// Mutate a 2x2 black square to be white in the bottom-right corner.
-	c := CanvasBuilder(2, 2, 0, 0, 0)
-	err := c.mutate(1, 1, 1, 1, 255, 255, 255)
+	// Make a 2x2 black square.
+	img := image.NewRGBA(image.Rect(0, 0, 2, 2))
+	black := color.RGBA{0, 0, 0, 255}
+	err := mutate(img, 0, 0, 2, 2, black)
 	assert.Nil(t, err)
-	assert.Equal(t, rgb{0, 0, 0, 255}, c.Rgb[0][0])
-	assert.Equal(t, rgb{0, 0, 0, 255}, c.Rgb[0][1])
-	assert.Equal(t, rgb{0, 0, 0, 255}, c.Rgb[1][0])
-	assert.Equal(t, rgb{255, 255, 255, 255}, c.Rgb[1][1])
+
+	// Check all four pixels are really black.
+	assert.Equal(t, black, img.At(0, 0))
+	assert.Equal(t, black, img.At(0, 1))
+	assert.Equal(t, black, img.At(1, 0))
+	assert.Equal(t, black, img.At(1, 1))
+
+	// Mutate the bottom-right square white and check it.
+	white := color.RGBA{255, 255, 255, 255}
+	errr := mutate(img, 1, 1, 1, 1, white)
+	assert.Nil(t, errr)
+	assert.Equal(t, black, img.At(0, 0))
+	assert.Equal(t, black, img.At(0, 1))
+	assert.Equal(t, black, img.At(1, 0))
+	assert.Equal(t, white, img.At(1, 1))
 }
 
 func TestFailedMutateCanvas(t *testing.T) {
-	c := CanvasBuilder(2, 2, 0, 0, 0)
-	errWide := c.mutate(1, 1, 1, 4, 255, 255, 255)
+	img := image.NewRGBA(image.Rect(0, 0, 2, 2))
+	black := color.RGBA{0, 0, 0, 255}
+	errWide := mutate(img, 1, 1, 1, 4, black)
 	assert.NotNil(t, errWide)
-	errHigh := c.mutate(1, 1, 4, 1, 255, 255, 255)
+	errHigh := mutate(img, 1, 1, 4, 1, black)
 	assert.NotNil(t, errHigh)
-	assert.Equal(t, rgb{0, 0, 0, 255}, c.Rgb[0][0])
-	assert.Equal(t, rgb{0, 0, 0, 255}, c.Rgb[0][1])
-	assert.Equal(t, rgb{0, 0, 0, 255}, c.Rgb[1][0])
-	assert.Equal(t, rgb{0, 0, 0, 255}, c.Rgb[1][1])
 }
 
-func TestRgbDist(t *testing.T) {
-	black := rgb{0, 0, 0, 255}
-	grey := rgb{100, 110, 120, 255}
-	assert.Equal(t, 330, black.dist(grey))
-	assert.Equal(t, 330, grey.dist(black))
+func TestColorDist(t *testing.T) {
+	black := color.RGBA{0, 0, 0, 255}
+	grey := color.RGBA{100, 110, 120, 255}
+	assert.Equal(t, 330, colorDist(black, grey))
+	assert.Equal(t, 330, colorDist(grey, black))
 }
 
-func TestScoreWithMutationErrors(t *testing.T) {
-	c1 := CanvasBuilder(2, 2, 0, 0, 0)
-	cWide := CanvasBuilder(3, 2, 0, 0, 0)
-	cHigh := CanvasBuilder(2, 3, 0, 0, 0)
+func TestImgDistMutationErrors(t *testing.T) {
+	img := image.NewRGBA(image.Rect(0, 0, 2, 2))
+	imgWide := image.NewRGBA(image.Rect(0, 0, 2, 3))
+	imgHigh := image.NewRGBA(image.Rect(0, 0, 3, 2))
+	black := color.RGBA{0, 0, 0, 255}
+
 	// Ensure distWithMutation errors when comparing different-sized canvases.
-	_, errSizeWide := c1.distWithMutation(cWide, 0, 0, 0, 0, 0, 0, 0, 0)
+	// imgDistMutated(img, other image.RGBA, cachedScore, x, y, w, h int, rgba color.RGBA)
+	_, errSizeWide := imgDistMutated(img, imgWide, 3000, 0, 0, 0, 0, black)
 	assert.NotNil(t, errSizeWide)
-	_, errSizeHigh := c1.distWithMutation(cHigh, 0, 0, 0, 0, 0, 0, 0, 0)
+	_, errSizeHigh := imgDistMutated(img, imgHigh, 3000, 0, 0, 0, 0, black)
 	assert.NotNil(t, errSizeHigh)
+
 	// Ensure it errors when given a wrongly-large mutation.
-	_, errWide := c1.distWithMutation(c1, 0, 1, 1, 1, 4, 255, 255, 255)
+	_, errWide := imgDistMutated(img, img, 3000, 0, 0, 1, 4, black)
 	assert.NotNil(t, errWide)
-	_, errHigh := c1.distWithMutation(c1, 0, 1, 1, 4, 1, 255, 255, 255)
+	_, errHigh := imgDistMutated(img, img, 3000, 0, 0, 4, 1, black)
 	assert.NotNil(t, errHigh)
 }
 
-func TestCanvasDist(t *testing.T) {
-	c1 := CanvasBuilder(2, 2, 0, 0, 0)
-	c2 := CanvasBuilder(2, 2, 100, 100, 100)
-	score, err := c1.dist(c2)
-	// Canvases are same size, so there should be no error.
+func TestImgDist(t *testing.T) {
+	imgBlack := image.NewRGBA(image.Rect(0, 0, 2, 2))
+	imgWhite := image.NewRGBA(image.Rect(0, 0, 2, 2))
+	black := color.RGBA{0, 0, 0, 255}
+	white := color.RGBA{255, 255, 255, 255}
+	err := mutate(imgBlack, 0, 0, 2, 2, black)
+	errr := mutate(imgWhite, 0, 0, 2, 2, white)
 	assert.Nil(t, err)
-	// Each of the 4 pixels has distance 300 from its counterpart
-	// Therefore the distance between c1 and c2 is 1200.
-	assert.Equal(t, 1200, score)
+	assert.Nil(t, errr)
+
+	expected := 255 * 3 * 4
+
+	// Compare the two same-size images
+	score, err := imgDist(imgBlack, imgWhite)
+	assert.Nil(t, err)
+	assert.Equal(t, expected, score)
 	// Test the inverse - should be exact same.
-	score2, err2 := c1.dist(c2)
+	score2, err2 := imgDist(imgWhite, imgBlack)
 	assert.Nil(t, err2)
-	assert.Equal(t, 1200, score2)
-}
-
-func TestRgb(t *testing.T) {
-	col := rgb{0, 50, 100, 255}
-	r, g, b, a := col.RGBA()
-	assert.Equal(t, uint8(0), r)
-	assert.Equal(t, uint8(50), g)
-	assert.Equal(t, uint8(100), b)
-	assert.Equal(t, uint8(255), a)
-}
-
-func TestCanvasBounds(t *testing.T) {
-	c := CanvasBuilder(2, 2, 0, 0, 0)
-	assert.Equal(t, image.Rect(0, 0, 2, 2), c.Bounds())
+	assert.Equal(t, expected, score2)
 }

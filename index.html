@@ -15,14 +15,13 @@
       </div>
       <div>
         <img id="target-image">
-        <canvas id="canvas" width="1" height="1" style="border:1px solid black"></canvas>
+        <img id="approx-image">
         <p id="stats"></p>
       </div>
     </div>
   </div>
 
   <script src="jquery/dist/jquery.js"></script>
-  <script src="scripts/rect.js"></script>
   <script src="scripts/main.js"></script>
   <script>
     rendering = false;
@@ -34,9 +33,8 @@
         var dataPrefix = "/image/img?url=";
         var filePrefix = "/remote/img?url=";
         var imgUrl = $("#imgUrl").val();
-        var img = $("#target-image").attr("src", filePrefix + imgUrl).css("height", "auto").css("width", "auto").hide();
+        var img = $("#target-image").attr("src", filePrefix + imgUrl).css("height", "auto").css("width", "auto");
         console.log("Rendering", imgUrl);
-        init(ITERATIONS, MUTATIONS_PER_ITERATION, img, dataPrefix+imgUrl);
       }
     });
 

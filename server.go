@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"image"
 	"image/color"
@@ -14,7 +13,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"strings"
 )
 
 var urlArg = regexp.MustCompile("url=(.*)")
@@ -23,20 +21,13 @@ var urlArg = regexp.MustCompile("url=(.*)")
  * Color code *
  **************/
 
-func (u rgbArray) MarshalJSON() ([]byte, error) {
-	var result string
-	if u == nil {
-		result = "null"
-	} else {
-		result = strings.Join(strings.Fields(fmt.Sprintf("%d", u)), ",")
-	}
-	return []byte(result), nil
-}
-
-func colorDist(c1, c2 color.Color) int {
-	r1, g1, b1, _ := c1.RGBA()
-	r2, g2, b2, _ := c2.RGBA()
-	sum := math.Abs(float64(r1)-float64(r2)) + math.Abs(float64(g1)-float64(g2)) + math.Abs(float64(b1)-float64(b2))
+func colorDist(_c1, _c2 color.Color) int {
+	c1, c2 := _c1.(color.RGBA), _c2.(color.RGBA)
+	sum := math.Abs(float64(c1.R) - float64(c2.R))
+	//fmt.Println(float64(r1), float64(r2), float64(r1)-float64(r2))
+	//fmt.Println(r1, float64(r1))
+	sum += math.Abs(float64(c1.G) - float64(c2.G))
+	sum += math.Abs(float64(c1.B) - float64(c2.B))
 	return int(sum)
 }
 
@@ -44,15 +35,8 @@ func colorDist(c1, c2 color.Color) int {
  * Canvas code *
  *************/
 
-// A HTML5 Canvas style representation of pixel data.
-type flatCanvas struct {
-	W, H int
-	Rgb  rgbArray
-}
-type rgbArray []uint8
-
 // Colors a subrect (x,y,w,h) in the canvas to color (r,g,b).
-func mutate(img image.RGBA, x, y, w, h int, rgba color.RGBA) error {
+func mutate(img *image.RGBA, x, y, w, h int, rgba color.RGBA) error {
 
 	// Check the mutated region fits inside the canvas.
 	if x+w > img.Bounds().Dx() || y+h > img.Bounds().Dy() {
@@ -69,7 +53,7 @@ func mutate(img image.RGBA, x, y, w, h int, rgba color.RGBA) error {
 }
 
 // Returns the pixelwise distance between two canvases.
-func imgDist(img1, img2 image.RGBA) (int, error) {
+func imgDist(img1, img2 *image.RGBA) (int, error) {
 	// Check the two canvases are the same size
 	if img1.Bounds() != img2.Bounds() {
 		return 0, fmt.Errorf("Can't compare different-sized images.")
@@ -84,7 +68,7 @@ func imgDist(img1, img2 image.RGBA) (int, error) {
 }
 
 // Returns the pixelwise distance between this canvas with a mutation and a second canvas of the same size.
-func imgDistMutated(img, other image.RGBA, cachedScore, x, y, w, h int, rgba color.RGBA) (int, error) {
+func imgDistMutated(img, other *image.RGBA, cachedScore, x, y, w, h int, rgba color.RGBA) (int, error) {
 
 	// Check the mutated region fits inside the canvas.
 	if x+w > img.Bounds().Dx() || y+h > img.Bounds().Dy() {
@@ -140,50 +124,6 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func imageHandler(w http.ResponseWriter, r *http.Request) {
-	// Extract the image URL from the request
-	url := urlParam(r)
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-	// Open the image
-	data := decode(resp.Body)
-	jsonStr, err := json.Marshal(data)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-	// Return this data.
-	w.Write(jsonStr)
-}
-
-func decode(imgfile io.ReadCloser) *flatCanvas {
-	// Decode the image
-	img, _, err := image.Decode(imgfile)
-	if err != nil {
-		log.Fatal("Couldn't read from image.")
-	}
-
-	// Extract color data from the decoded image
-	bounds := img.Bounds()
-	w := bounds.Dx()
-	h := bounds.Dy()
-	rgb := make(rgbArray, 0)
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			r, g, b, _ := img.At(x, y).RGBA()
-			rgb = append(rgb, uint8(r))
-			rgb = append(rgb, uint8(g))
-			rgb = append(rgb, uint8(b))
-		}
-	}
-
-	data := flatCanvas{w, h, rgb}
-	return &data
-}
-
 func fileHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, r.URL.Path[1:])
 }
@@ -193,7 +133,6 @@ func main() {
 	fmt.Println("Running on", port)
 
 	http.HandleFunc("/", fileHandler)
-	http.HandleFunc("/image/", imageHandler)
 	http.HandleFunc("/remote/", remoteHandler)
 	http.HandleFunc("/test/", testHandler)
 	err := http.ListenAndServe(port, nil)
