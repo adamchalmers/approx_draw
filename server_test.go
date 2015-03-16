@@ -141,4 +141,8 @@ func BenchmarkApproxing(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		approximate(img)
 	}
+
+	// to profile this benchmark:
+	// $ go test -c && ./approx_draw.test -test.bench=.
+	// $ go tool pprof approx_draw.test test1_approxdraw.cpuprofile
 }
