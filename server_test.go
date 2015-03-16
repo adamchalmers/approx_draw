@@ -4,6 +4,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"image"
 	"image/color"
+	"log"
+	"os"
+	"runtime/pprof"
 	"testing"
 )
 
@@ -25,6 +28,13 @@ func whiteBox(t *testing.T) (*image.RGBA, color.RGBA) {
 
 func TestCanary(t *testing.T) {
 	assert.True(t, true, "True is true!")
+}
+
+func TestAbs(t *testing.T) {
+	x := uint8(255)
+	y := uint8(100)
+	assert.Equal(t, 155, abs(x, y))
+	assert.Equal(t, 155, abs(y, x))
 }
 
 func TestMutate(t *testing.T) {
@@ -109,4 +119,26 @@ func TestImgDist(t *testing.T) {
 	score2, err2 := imgDist(imgWhite, imgBlack)
 	assert.Nil(t, err2)
 	assert.Equal(t, expected, score2)
+}
+
+// Benchmark the speed of generating an approximate image.
+func BenchmarkApproxing(b *testing.B) {
+	// Load the file to an image.RGBA
+	target, err := os.Open("./img/pat.png")
+	if err != nil {
+		log.Fatal("Couldn't open test file.")
+	}
+	_img, _, err := image.Decode(target)
+	if err != nil {
+		log.Fatal("Couldn't decodetest file.")
+	}
+	img := toRGBA(_img)
+
+	// Actually run the benchmark
+	f, _ := os.Create("test1_approxdraw.cpuprofile")
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+	for n := 0; n < b.N; n++ {
+		approximate(img)
+	}
 }

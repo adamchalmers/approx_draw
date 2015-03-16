@@ -9,7 +9,6 @@ import (
 	"image/png"
 	"io"
 	"log"
-	"math"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -20,8 +19,16 @@ var urlArg = regexp.MustCompile("url=(.*)")
 
 const (
 	ITERATIONS = 10
-	TRIES      = 100
+	TRIES      = 1000
 )
+
+func abs(x, y uint8) int {
+	if x > y {
+		return int(x - y)
+	} else {
+		return int(y - x)
+	}
+}
 
 /**************
  * Image code *
@@ -50,7 +57,6 @@ func approximate(target *image.RGBA) (*image.RGBA, int) {
 	}
 	for i := 0; i < ITERATIONS; i++ {
 		cachedScore := score
-		fmt.Println(cachedScore)
 		var bestMutation mutation
 		for try := 0; try < TRIES; try++ {
 
@@ -95,9 +101,9 @@ func colorsIn(img *image.RGBA) []color.RGBA {
 // RGB distance between two colors.
 func colorDist(_c1, _c2 color.Color) int {
 	c1, c2 := _c1.(color.RGBA), _c2.(color.RGBA)
-	sum := math.Abs(float64(c1.R) - float64(c2.R))
-	sum += math.Abs(float64(c1.G) - float64(c2.G))
-	sum += math.Abs(float64(c1.B) - float64(c2.B))
+	sum := abs(c1.R, c2.R)
+	sum += abs(c1.G, c2.G)
+	sum += abs(c1.B, c2.B)
 	return int(sum)
 }
 
@@ -155,6 +161,16 @@ func imgDistMutated(img, other *image.RGBA, cachedScore, x, y, w, h int, rgba co
 	return score, nil
 }
 
+func toRGBA(_target image.Image) *image.RGBA {
+	target := image.NewRGBA(_target.Bounds())
+	for x := target.Bounds().Min.X; x < target.Bounds().Max.X; x++ {
+		for y := target.Bounds().Min.Y; y < target.Bounds().Max.Y; y++ {
+			target.Set(x, y, _target.At(x, y))
+		}
+	}
+	return target
+}
+
 /**************
  * Server code *
  **************/
@@ -203,13 +219,7 @@ func approxHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// convert _target (color.Color) to target (color.RGBA)
-	target := image.NewRGBA(_target.Bounds())
-	for x := target.Bounds().Min.X; x < target.Bounds().Max.X; x++ {
-		for y := target.Bounds().Min.Y; y < target.Bounds().Max.Y; y++ {
-			target.Set(x, y, _target.At(x, y))
-		}
-	}
+	target := toRGBA(_target)
 
 	approximation, score := approximate(target)
 	fmt.Println(float64(score) / 1000000)
