@@ -23,19 +23,6 @@ var urlArg = regexp.MustCompile("url=(.*)")
  * Color code *
  **************/
 
-type rgb color.RGBA
-
-func (c1 rgb) dist(c2 rgb) int {
-	sum := math.Abs(float64(int(c1.R) - int(c2.R)))
-	sum += math.Abs(float64(int(c1.B) - int(c2.B)))
-	sum += math.Abs(float64(int(c1.G) - int(c2.G)))
-	return int(sum)
-}
-
-func (c rgb) RGBA() (r, g, b, a uint32) {
-	return uint32(c.R), uint32(c.G), uint32(c.B), uint32(c.A)
-}
-
 func (u rgbArray) MarshalJSON() ([]byte, error) {
 	var result string
 	if u == nil {
@@ -44,6 +31,13 @@ func (u rgbArray) MarshalJSON() ([]byte, error) {
 		result = strings.Join(strings.Fields(fmt.Sprintf("%d", u)), ",")
 	}
 	return []byte(result), nil
+}
+
+func colorDist(c1, c2 color.Color) int {
+	r1, g1, b1, _ := c1.RGBA()
+	r2, g2, b2, _ := c2.RGBA()
+	sum := math.Abs(float64(r1)-float64(r2)) + math.Abs(float64(g1)-float64(g2)) + math.Abs(float64(b1)-float64(b2))
+	return int(sum)
 }
 
 /***************
@@ -57,83 +51,48 @@ type flatCanvas struct {
 }
 type rgbArray []uint8
 
-// Represents an image as a pixel grid.
-type Canvas struct {
-	W, H int
-	Rgb  [][]rgb
-}
-
-// Makes a new w by h canvas with color (r,g,b).
-func CanvasBuilder(w, h int, r, g, b uint8) Canvas {
-	pixels := make([][]rgb, h)
-	for j := 0; j < h; j++ {
-		pixels[j] = make([]rgb, w)
-		for i := 0; i < w; i++ {
-			pixels[j][i] = rgb{r, g, b, 255}
-		}
-	}
-	return Canvas{w, h, pixels}
-}
-
-func (c Canvas) ColorModel() color.Model {
-	return color.RGBAModel
-}
-
-func (c Canvas) Bounds() image.Rectangle {
-	return image.Rect(0, 0, c.W, c.H)
-}
-
-func (c Canvas) At(x, y int) color.Color {
-	col := c.Rgb[y][x]
-	fmt.Println(col.A)
-	return col
-}
-
 // Colors a subrect (x,y,w,h) in the canvas to color (r,g,b).
-func (c *Canvas) mutate(x, y, w, h int, r, g, b uint8) error {
+func mutate(img image.RGBA, x, y, w, h int, rgba color.RGBA) error {
 
 	// Check the mutated region fits inside the canvas.
-	if x+w > c.W {
-		return fmt.Errorf("Mutation from %v, width %v in rect of width %v", x, w, c.W)
-	}
-	if y+h > c.H {
-		return fmt.Errorf("Mutation from %v, height %v in rect of height %v", y, h, c.H)
+	if x+w > img.Bounds().Dx() || y+h > img.Bounds().Dy() {
+		return fmt.Errorf("Invalid mutation size.")
 	}
 
 	// Fill in the coloured region.
 	for i := x; i < w+x; i++ {
 		for j := y; j < h+y; j++ {
-			c.Rgb[i][j] = rgb{r, g, b, 255}
+			img.SetRGBA(i, j, rgba)
 		}
 	}
 	return nil
 }
 
 // Returns the pixelwise distance between two canvases.
-func (c *Canvas) dist(other Canvas) (int, error) {
+func imgDist(img1, img2 image.RGBA) (int, error) {
 	// Check the two canvases are the same size
-	if c.W != other.W || c.H != other.H {
-		return 0, fmt.Errorf("Can't compare canvases %v.%v and %v.%v", c.W, c.H, other.W, other.H)
+	if img1.Bounds() != img2.Bounds() {
+		return 0, fmt.Errorf("Can't compare different-sized images.")
 	}
 	sum := 0
-	for i := 0; i < c.W; i++ {
-		for j := 0; j < c.H; j++ {
-			sum += c.Rgb[i][j].dist(other.Rgb[i][j])
+	for i := img1.Bounds().Min.X; i < img1.Bounds().Max.X; i++ {
+		for j := img1.Bounds().Min.Y; j < img1.Bounds().Max.Y; j++ {
+			sum += colorDist(img1.At(i, j), img2.At(i, j))
 		}
 	}
 	return sum, nil
 }
 
 // Returns the pixelwise distance between this canvas with a mutation and a second canvas of the same size.
-func (c *Canvas) distWithMutation(other Canvas, cachedScore, x, y, w, h int, r, g, b uint8) (int, error) {
+func imgDistMutated(img, other image.RGBA, cachedScore, x, y, w, h int, rgba color.RGBA) (int, error) {
 
 	// Check the mutated region fits inside the canvas.
-	if x+w > c.W || y+h > c.H {
-		return 0, fmt.Errorf("Mutation won't fit.", x, w, c.W)
+	if x+w > img.Bounds().Dx() || y+h > img.Bounds().Dy() {
+		return 0, fmt.Errorf("Mutation won't fit.")
 	}
 	// Check the two canvases are the same size
-	if c.W != other.W || c.H != other.H {
-		return 0, fmt.Errorf("Can't compare canvases %v.%v and %v.%v", c.W, c.H, other.W, other.H)
+	if img.Bounds() != other.Bounds() {
+		return 0, fmt.Errorf("Can't compare different-sized canvases.")
 	}
 	return 0, nil
 }
@@ -168,8 +127,7 @@ func remoteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func testHandler(w http.ResponseWriter, r *http.Request) {
-	canvas := CanvasBuilder(20, 20, 150, 200, 255)
-	//canvas := image.NewRGBA(image.Rect(0, 0, 30, 30))
+	canvas := image.NewRGBA(image.Rect(0, 0, 30, 30))
 	for x := 0; x < 30; x++ {
 		for y := 0; y < 30; y++ {
 			//canvas.SetRGBA(x, y, color.RGBA{0, 0, 255, 255})
