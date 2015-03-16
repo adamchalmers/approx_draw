@@ -47,7 +47,7 @@ func approximate(target *image.RGBA) (*image.RGBA, int) {
 	imgW := approx.Bounds().Dx()
 	imgH := approx.Bounds().Dy()
 	start := mutation{0, 0, imgW, imgH, color.RGBA{255, 255, 255, 255}}
-	colors := colorsIn(target)
+	colors, targetCache := colorsIn(target)
 	mutate(approx, start)
 
 	// Loop
@@ -68,7 +68,7 @@ func approximate(target *image.RGBA) (*image.RGBA, int) {
 			rgb := colors[rand.Intn(len(colors))]
 
 			// Save this mutation if it's the best.
-			tryScore, err := imgDistMutated(approx, target, cachedScore, x, y, w, h, rgb)
+			tryScore, err := imgDistMutated(approx, target, targetCache, cachedScore, x, y, w, h, rgb)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -83,19 +83,21 @@ func approximate(target *image.RGBA) (*image.RGBA, int) {
 	return approx, score
 }
 
-func colorsIn(img *image.RGBA) []color.RGBA {
+func colorsIn(img *image.RGBA) ([]color.RGBA, map[image.Point]color.RGBA) {
 	colsList := make([]color.RGBA, 1000)
 	cols := make(map[color.RGBA]bool)
+	cache := make(map[image.Point]color.RGBA)
 	for x := img.Bounds().Min.X; x < img.Bounds().Max.X; x++ {
 		for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
 			color := img.At(x, y).(color.RGBA)
 			if _, prs := cols[color]; !prs {
 				cols[color] = true
 				colsList = append(colsList, color)
+				cache[image.Point{x, y}] = color
 			}
 		}
 	}
-	return colsList
+	return colsList, cache
 }
 
 // RGB distance between two colors.
@@ -140,21 +142,23 @@ func imgDist(img1, img2 *image.RGBA) (int, error) {
 }
 
 // Returns the pixelwise distance between this canvas with a mutation and a second canvas of the same size.
-func imgDistMutated(img, other *image.RGBA, cachedScore, x, y, w, h int, rgba color.RGBA) (int, error) {
-
+func imgDistMutated(img, target *image.RGBA, targetCache map[image.Point]color.RGBA, cachedScore, x, y, w, h int, rgba color.RGBA) (int, error) {
 	// Check the mutated region fits inside the canvas.
 	if x+w > img.Bounds().Dx() || y+h > img.Bounds().Dy() {
 		return 0, fmt.Errorf("Mutation won't fit.")
 	}
 	// Check the two canvases are the same size
-	if img.Bounds() != other.Bounds() {
+	if img.Bounds() != target.Bounds() {
 		return 0, fmt.Errorf("Can't compare different-sized canvases.")
 	}
 	score := cachedScore
 	for i := x; i < x+w; i++ {
 		for j := y; j < y+h; j++ {
 			// Subtract the original color's score, add the mutated color's score.
-			col := other.At(i, j)
+			col, present := targetCache[image.Point{i, j}]
+			if !present {
+				col = target.At(i, j).(color.RGBA)
+			}
 			score -= colorDist(col, img.At(i, j))
 			score += colorDist(col, rgba)
 		}
