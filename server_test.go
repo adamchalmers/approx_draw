@@ -76,29 +76,27 @@ func TestImgDistMutationErrors(t *testing.T) {
 	img, black := blackBox(t)
 	imgWide := image.NewRGBA(image.Rect(0, 0, 2, 3))
 	imgHigh := image.NewRGBA(image.Rect(0, 0, 3, 2))
-	emptyCache := make(map[image.Point]color.RGBA)
 
 	// Ensure distWithMutation errors when comparing different-sized canvases.
 	// imgDistMutated(img, other image.RGBA, cachedScore, x, y, w, h int, rgba color.RGBA)
-	_, errSizeWide := imgDistMutated(img, imgWide, emptyCache, 3000, 0, 0, 0, 0, black)
+	_, errSizeWide := imgDistMutated(img, imgWide, 3000, mutation{0, 0, 0, 0, black})
 	assert.NotNil(t, errSizeWide)
-	_, errSizeHigh := imgDistMutated(img, imgHigh, emptyCache, 3000, 0, 0, 0, 0, black)
+	_, errSizeHigh := imgDistMutated(img, imgHigh, 3000, mutation{0, 0, 0, 0, black})
 	assert.NotNil(t, errSizeHigh)
 
 	// Ensure it errors when given a wrongly-large mutation.
-	_, errWide := imgDistMutated(img, img, emptyCache, 3000, 0, 0, 1, 4, black)
+	_, errWide := imgDistMutated(img, img, 3000, mutation{0, 0, 1, 4, black})
 	assert.NotNil(t, errWide)
-	_, errHigh := imgDistMutated(img, img, emptyCache, 3000, 0, 0, 4, 1, black)
+	_, errHigh := imgDistMutated(img, img, 3000, mutation{0, 0, 4, 1, black})
 	assert.NotNil(t, errHigh)
 }
 
 func TestImgDistMutation(t *testing.T) {
 	imgBlack, _ := blackBox(t)
 	imgWhite, white := whiteBox(t)
-	emptyCache := make(map[image.Point]color.RGBA)
 	score, err := imgDist(imgBlack, imgWhite)
 	assert.Nil(t, err)
-	tryScore, err := imgDistMutated(imgBlack, imgWhite, emptyCache, score, 1, 1, 1, 1, white)
+	tryScore, err := imgDistMutated(imgBlack, imgWhite, score, mutation{1, 1, 1, 1, white})
 	assert.Nil(t, err)
 	expected := 255 * 3 * 3
 	assert.Equal(t, expected, tryScore)

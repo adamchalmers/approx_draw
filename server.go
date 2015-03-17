@@ -47,7 +47,7 @@ func approximate(target *image.RGBA) (*image.RGBA, int) {
 	imgW := approx.Bounds().Dx()
 	imgH := approx.Bounds().Dy()
 	start := mutation{0, 0, imgW, imgH, color.RGBA{255, 255, 255, 255}}
-	colors, targetCache := colorsIn(target)
+	colors := colorsIn(target)
 	mutate(approx, start)
 
 	// Loop
@@ -66,15 +66,16 @@ func approximate(target *image.RGBA) (*image.RGBA, int) {
 			x := rand.Intn(imgW - w)
 			y := rand.Intn(imgH - h)
 			rgb := colors[rand.Intn(len(colors))]
+			m := mutation{x, y, w, h, rgb}
 
 			// Save this mutation if it's the best.
-			tryScore, err := imgDistMutated(approx, target, targetCache, cachedScore, x, y, w, h, rgb)
+			tryScore, err := imgDistMutated(approx, target, cachedScore, m)
 			if err != nil {
 				log.Fatal(err)
 			}
 			if tryScore < score {
 				score = tryScore
-				bestMutation = mutation{x, y, w, h, rgb}
+				bestMutation = m
 			}
 
 		} // end tries
@@ -86,21 +87,19 @@ func approximate(target *image.RGBA) (*image.RGBA, int) {
 // Returns a slice containing all colors used in the image, and
 // a map from each point/pixel in the image to its color.
 // looking up colors in this map is 100x faster than using img.at again.
-func colorsIn(img *image.RGBA) ([]color.RGBA, map[image.Point]color.RGBA) {
+func colorsIn(img *image.RGBA) []color.RGBA {
 	colsList := make([]color.RGBA, 1000)
 	cols := make(map[color.RGBA]bool)
-	cache := make(map[image.Point]color.RGBA)
 	for x := img.Bounds().Min.X; x < img.Bounds().Max.X; x++ {
 		for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
 			color := img.RGBAAt(x, y)
 			if _, prs := cols[color]; !prs {
 				cols[color] = true
 				colsList = append(colsList, color)
-				cache[image.Point{x, y}] = color
 			}
 		}
 	}
-	return colsList, cache
+	return colsList
 }
 
 // RGB distance between two colors.
@@ -144,9 +143,9 @@ func imgDist(img1, img2 *image.RGBA) (int, error) {
 }
 
 // Returns the pixelwise distance between this canvas with a mutation and a second canvas of the same size.
-func imgDistMutated(img, target *image.RGBA, targetCache map[image.Point]color.RGBA, cachedScore, x, y, w, h int, rgba color.RGBA) (int, error) {
+func imgDistMutated(img, target *image.RGBA, cachedScore int, m mutation) (int, error) {
 	// Check the mutated region fits inside the canvas.
-	if x+w > img.Bounds().Dx() || y+h > img.Bounds().Dy() {
+	if m.x+m.w > img.Bounds().Dx() || m.y+m.h > img.Bounds().Dy() {
 		return 0, fmt.Errorf("Mutation won't fit.")
 	}
 	// Check the two canvases are the same size
@@ -154,12 +153,12 @@ func imgDistMutated(img, target *image.RGBA, targetCache map[image.Point]color.R
 		return 0, fmt.Errorf("Can't compare different-sized canvases.")
 	}
 	score := cachedScore
-	for i := x; i < x+w; i++ {
-		for j := y; j < y+h; j++ {
+	for i := m.x; i < m.x+m.w; i++ {
+		for j := m.y; j < m.y+m.h; j++ {
 			// Subtract the original color's score, add the mutated color's score.
 			col := target.RGBAAt(i, j)
 			score -= colorDist(col, img.RGBAAt(i, j))
-			score += colorDist(col, rgba)
+			score += colorDist(col, m.rgb)
 		}
 	}
 	return score, nil
