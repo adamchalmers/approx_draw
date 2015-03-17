@@ -20,12 +20,11 @@
 }
 
 body {
-  background: #eee;
+  background: #f9f9f9;
   font-family: sans-serif;
 }
 
 button, input {
-  border: solid 2px #555;
   border-radius: 10px;
   padding: 5px;
   font-size: x-large;
@@ -33,16 +32,26 @@ button, input {
 
 button {
   width: 100px;
-  background-color: #239;
-  color: #eee;
+  background-color: #337ab7;
+  border: 1px solid #2e6da4;
+  color: white;
 }
 
 input {
   width: 400px;
+  border: 1px solid #ccc;
+  color: #555;
+
 }
 
 h1 {
   text-align: center;
   margin-bottom: 80px;
   font-size: xx-large;
+}
+
+#footer {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
 }

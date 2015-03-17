@@ -1,6 +1,10 @@
 <html>
 <head>
-  <link rel="stylesheet" type="text/css" href="style.css">
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="style.css" rel="stylesheet" >
   <title>Approxidraw</title>
 </head>
 <body>
@@ -10,9 +14,11 @@
   <div id="wrapper">
     <div class="container">
       <div id="inputs">
-        <input type="text" value="https://i.imgur.com/t0XRVO0.png" id="imgUrl">
-        <button id="start">Render</button>
-      </div>
+        <form class="form-inline">
+          <input type="text" class="form-control" id="imgUrl" placeholder="Amount" value="https://i.imgur.com/t0XRVO0.png" >
+          <button type="button" class="btn btn-primary" id="start">Render</button>
+        </form>
+      </div> <!-- end inputs -->
       <div>
         <img id="target-image">
         <img id="approx-image">
@@ -22,7 +28,6 @@
   </div>
 
   <script src="jquery/dist/jquery.js"></script>
-  <script src="scripts/main.js"></script>
   <script>
     rendering = false;
     ITERATIONS = 10;
@@ -40,6 +45,7 @@
     });
 
   </script>
-
+  <span id="footer">Made by <a href="http://twitter.com/adam_chal">@adam_chal</a>. Fork this on <a href="https://github.com/adamchalmers/approx_draw">Github</a>!
+  </span>
 </body>
 </html>
