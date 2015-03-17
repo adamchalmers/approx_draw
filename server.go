@@ -88,7 +88,7 @@ func colorsIn(img *image.RGBA) []color.RGBA {
 	cols := make(map[color.RGBA]bool)
 	for x := img.Bounds().Min.X; x < img.Bounds().Max.X; x++ {
 		for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
-			color := img.At(x, y).(color.RGBA)
+			color := img.RGBAAt(x, y)
 			if _, prs := cols[color]; !prs {
 				cols[color] = true
 				colsList = append(colsList, color)
@@ -99,8 +99,7 @@ func colorsIn(img *image.RGBA) []color.RGBA {
 }
 
 // RGB distance between two colors.
-func colorDist(_c1, _c2 color.Color) int {
-	c1, c2 := _c1.(color.RGBA), _c2.(color.RGBA)
+func colorDist(c1, c2 color.RGBA) int {
 	sum := abs(c1.R, c2.R)
 	sum += abs(c1.G, c2.G)
 	sum += abs(c1.B, c2.B)
@@ -133,7 +132,7 @@ func imgDist(img1, img2 *image.RGBA) (int, error) {
 	sum := 0
 	for i := img1.Bounds().Min.X; i < img1.Bounds().Max.X; i++ {
 		for j := img1.Bounds().Min.Y; j < img1.Bounds().Max.Y; j++ {
-			sum += colorDist(img1.At(i, j), img2.At(i, j))
+			sum += colorDist(img1.RGBAAt(i, j), img2.RGBAAt(i, j))
 		}
 	}
 	return sum, nil
@@ -154,8 +153,8 @@ func imgDistMutated(img, other *image.RGBA, cachedScore, x, y, w, h int, rgba co
 	for i := x; i < x+w; i++ {
 		for j := y; j < y+h; j++ {
 			// Subtract the original color's score, add the mutated color's score.
-			col := other.At(i, j)
-			score -= colorDist(col, img.At(i, j))
+			col := other.RGBAAt(i, j)
+			score -= colorDist(col, img.RGBAAt(i, j))
 			score += colorDist(col, rgba)
 		}
 	}
