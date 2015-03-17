@@ -77,8 +77,7 @@ func TestImgDistMutation(t *testing.T) {
 	imgWhite, white := whiteBox(t)
 	score, err := imgDist(imgBlack, imgWhite)
 	assert.Nil(t, err)
-	tryScore, err := imgDistMutated(imgBlack, imgWhite, score, mutation{1, 1, 1, 1, white})
-	assert.Nil(t, err)
+	tryScore := imgDistMutated(imgBlack, imgWhite, score, mutation{1, 1, 1, 1, white})
 	expected := 255 * 3 * 3
 	assert.Equal(t, expected, tryScore)
 }

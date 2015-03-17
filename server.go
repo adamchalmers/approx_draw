@@ -75,10 +75,7 @@ func approximate(target *image.RGBA) (*image.RGBA, int) {
 			m := mutation{x, y, w, h, rgb}
 
 			// Save this mutation if it's the best.
-			tryScore, err := imgDistMutated(approx, target, cachedScore, m)
-			if err != nil {
-				log.Fatal(err)
-			}
+			tryScore := imgDistMutated(approx, target, cachedScore, m)
 			if tryScore < score {
 				score = tryScore
 				bestMutation = m
@@ -151,7 +148,7 @@ func imgDist(img1, img2 *image.RGBA) (int, error) {
 }
 
 // Returns the pixelwise distance between this canvas with a mutation and a second canvas of the same size.
-func imgDistMutated(img, target *image.RGBA, cachedScore int, m mutation) (int, error) {
+func imgDistMutated(img, target *image.RGBA, cachedScore int, m mutation) int {
 	score := cachedScore
 	for i := m.x; i < m.x+m.w; i++ {
 		for j := m.y; j < m.y+m.h; j++ {
@@ -161,7 +158,7 @@ func imgDistMutated(img, target *image.RGBA, cachedScore int, m mutation) (int, 
 			score += colorDist(col, m.rgb)
 		}
 	}
-	return score, nil
+	return score
 }
 
 func toRGBA(_target image.Image) *image.RGBA {
