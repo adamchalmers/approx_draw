@@ -18,8 +18,9 @@ import (
 var urlArg = regexp.MustCompile("url=(.*)")
 
 const (
-	ITERATIONS = 10
-	TRIES      = 1000
+	ITERATIONS    = 20
+	TRIES         = 2000
+	PIXELSAMPLING = 2
 )
 
 func abs(x, y uint8) int {
@@ -150,8 +151,8 @@ func imgDist(img1, img2 *image.RGBA) (int, error) {
 // Returns the pixelwise distance between this canvas with a mutation and a second canvas of the same size.
 func imgDistMutated(img, target *image.RGBA, cachedScore int, m mutation) int {
 	score := cachedScore
-	for i := m.x; i < m.x+m.w; i++ {
-		for j := m.y; j < m.y+m.h; j++ {
+	for i := m.x; i < m.x+m.w; i += PIXELSAMPLING {
+		for j := m.y; j < m.y+m.h; j += PIXELSAMPLING {
 			// Subtract the original color's score, add the mutated color's score.
 			col := myRGBAAt(target, i, j)
 			score -= colorDist(col, myRGBAAt(img, i, j))
