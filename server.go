@@ -39,6 +39,11 @@ type mutation struct {
 	rgb        color.RGBA
 }
 
+func myRGBAAt(p *image.RGBA, x, y int) color.RGBA {
+	i := p.PixOffset(x, y)
+	return color.RGBA{p.Pix[i+0], p.Pix[i+1], p.Pix[i+2], p.Pix[i+3]}
+}
+
 // Returns an image which approximately recreates the input image.
 func approximate(target *image.RGBA) (*image.RGBA, int) {
 
@@ -95,7 +100,7 @@ func colorsIn(img *image.RGBA) []color.RGBA {
 	cols := make(map[color.RGBA]bool)
 	for x := img.Bounds().Min.X; x < img.Bounds().Max.X; x++ {
 		for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
-			color := img.RGBAAt(x, y)
+			color := myRGBAAt(img, x, y)
 			if _, prs := cols[color]; !prs {
 				cols[color] = true
 				colsList = append(colsList, color)
@@ -139,7 +144,7 @@ func imgDist(img1, img2 *image.RGBA) (int, error) {
 	sum := 0
 	for i := img1.Bounds().Min.X; i < img1.Bounds().Max.X; i++ {
 		for j := img1.Bounds().Min.Y; j < img1.Bounds().Max.Y; j++ {
-			sum += colorDist(img1.RGBAAt(i, j), img2.RGBAAt(i, j))
+			sum += colorDist(myRGBAAt(img1, i, j), myRGBAAt(img2, i, j))
 		}
 	}
 	return sum, nil
@@ -151,8 +156,8 @@ func imgDistMutated(img, target *image.RGBA, cachedScore int, m mutation) (int, 
 	for i := m.x; i < m.x+m.w; i++ {
 		for j := m.y; j < m.y+m.h; j++ {
 			// Subtract the original color's score, add the mutated color's score.
-			col := target.RGBAAt(i, j)
-			score -= colorDist(col, img.RGBAAt(i, j))
+			col := myRGBAAt(target, i, j)
+			score -= colorDist(col, myRGBAAt(img, i, j))
 			score += colorDist(col, m.rgb)
 		}
 	}
