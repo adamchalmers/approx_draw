@@ -15,13 +15,13 @@ import (
 	"regexp"
 )
 
-var urlArg = regexp.MustCompile("url=(.*)")
-
 const (
-	ITERATIONS    = 20
-	TRIES         = 2000
+	TRIES         = 20
+	MUTATIONS     = 2000
 	PIXELSAMPLING = 2
 )
+
+var urlArg = regexp.MustCompile("url=(.*)")
 
 func abs(x, y uint8) int {
 	if x > y {
@@ -46,7 +46,7 @@ func myRGBAAt(p *image.RGBA, x, y int) color.RGBA {
 }
 
 // Returns an image which approximately recreates the input image.
-func approximate(target *image.RGBA) (*image.RGBA, int) {
+func approximate(target *image.RGBA, ITERATIONS, TRIES, PIXELSAMPLING int) (*image.RGBA, int) {
 
 	// Start with a white background.
 	approx := image.NewRGBA(target.Bounds())
@@ -76,7 +76,7 @@ func approximate(target *image.RGBA) (*image.RGBA, int) {
 			m := mutation{x, y, w, h, rgb}
 
 			// Save this mutation if it's the best.
-			tryScore := imgDistMutated(approx, target, cachedScore, m)
+			tryScore := imgDistMutated(approx, target, cachedScore, m, PIXELSAMPLING)
 			if tryScore < score {
 				score = tryScore
 				bestMutation = m
@@ -149,7 +149,7 @@ func imgDist(img1, img2 *image.RGBA) (int, error) {
 }
 
 // Returns the pixelwise distance between this canvas with a mutation and a second canvas of the same size.
-func imgDistMutated(img, target *image.RGBA, cachedScore int, m mutation) int {
+func imgDistMutated(img, target *image.RGBA, cachedScore int, m mutation, PIXELSAMPLING int) int {
 	score := cachedScore
 	for i := m.x; i < m.x+m.w; i += PIXELSAMPLING {
 		for j := m.y; j < m.y+m.h; j += PIXELSAMPLING {
@@ -222,7 +222,7 @@ func approxHandler(w http.ResponseWriter, r *http.Request) {
 
 	target := toRGBA(_target)
 
-	approximation, score := approximate(target)
+	approximation, score := approximate(target, TRIES, MUTATIONS, PIXELSAMPLING)
 	fmt.Println(float64(score) / 1000000)
 	png.Encode(w, approximation)
 }

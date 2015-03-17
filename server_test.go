@@ -77,7 +77,7 @@ func TestImgDistMutation(t *testing.T) {
 	imgWhite, white := whiteBox(t)
 	score, err := imgDist(imgBlack, imgWhite)
 	assert.Nil(t, err)
-	tryScore := imgDistMutated(imgBlack, imgWhite, score, mutation{1, 1, 1, 1, white})
+	tryScore := imgDistMutated(imgBlack, imgWhite, score, mutation{1, 1, 1, 1, white}, 1)
 	expected := 255 * 3 * 3
 	assert.Equal(t, expected, tryScore)
 }
@@ -119,7 +119,7 @@ func BenchmarkApproxing(b *testing.B) {
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
 	for n := 0; n < b.N; n++ {
-		approximate(img)
+		approximate(img, 20, 2000, 2)
 	}
 
 	// to profile this benchmark:
