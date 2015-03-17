@@ -34,8 +34,6 @@ Its performance is O(I*R*P), where I is iterations, R is rectangles per iteratio
 ![Image showing demo of approximation](https://cloud.githubusercontent.com/assets/5407457/6575532/93e73046-c783-11e4-93f6-aafc898a4934.png)
 
 <h2>To do</h2>
- - Image upload (by extending the server)
- - Do the processing server-side instead
-  - Use numpy or rewrite server in Java/Go to get faster performance than Python
  - Make GIFs that show the images being built up, rectangle by rectangle
  - Further optimize by cutting off the scoreWithMutation calculation once it's higher than the cached score by enough that the remaining pixels couldn't possibly even it back out.
+ - Optimise the server code - why is the JS version twice as fast as the Go version?
