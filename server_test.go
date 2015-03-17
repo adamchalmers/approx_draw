@@ -72,25 +72,6 @@ func TestColorDist(t *testing.T) {
 	assert.Equal(t, 330, colorDist(grey, black))
 }
 
-func TestImgDistMutationErrors(t *testing.T) {
-	img, black := blackBox(t)
-	imgWide := image.NewRGBA(image.Rect(0, 0, 2, 3))
-	imgHigh := image.NewRGBA(image.Rect(0, 0, 3, 2))
-
-	// Ensure distWithMutation errors when comparing different-sized canvases.
-	// imgDistMutated(img, other image.RGBA, cachedScore, x, y, w, h int, rgba color.RGBA)
-	_, errSizeWide := imgDistMutated(img, imgWide, 3000, mutation{0, 0, 0, 0, black})
-	assert.NotNil(t, errSizeWide)
-	_, errSizeHigh := imgDistMutated(img, imgHigh, 3000, mutation{0, 0, 0, 0, black})
-	assert.NotNil(t, errSizeHigh)
-
-	// Ensure it errors when given a wrongly-large mutation.
-	_, errWide := imgDistMutated(img, img, 3000, mutation{0, 0, 1, 4, black})
-	assert.NotNil(t, errWide)
-	_, errHigh := imgDistMutated(img, img, 3000, mutation{0, 0, 4, 1, black})
-	assert.NotNil(t, errHigh)
-}
-
 func TestImgDistMutation(t *testing.T) {
 	imgBlack, _ := blackBox(t)
 	imgWhite, white := whiteBox(t)
@@ -145,4 +126,16 @@ func BenchmarkApproxing(b *testing.B) {
 	// to profile this benchmark:
 	// $ go test -c && ./approx_draw.test -test.bench=.
 	// $ go tool pprof approx_draw.test test1_approxdraw.cpuprofile
+}
+
+func BenchmarkColorDist(b *testing.B) {
+	black := color.RGBA{0, 0, 0, 255}
+	white := color.RGBA{255, 255, 255, 255}
+	f, _ := os.Create("colordist_approxdraw.cpuprofile")
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+	for n := 0; n < b.N; n++ {
+		colorDist(black, white)
+		colorDist(white, black)
+	}
 }

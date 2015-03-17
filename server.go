@@ -50,7 +50,6 @@ func approximate(target *image.RGBA) (*image.RGBA, int) {
 	colors := colorsIn(target)
 	mutate(approx, start)
 
-	// Loop
 	score, err := imgDist(target, approx)
 	if err != nil {
 		log.Fatal(err)
@@ -58,6 +57,8 @@ func approximate(target *image.RGBA) (*image.RGBA, int) {
 	for i := 0; i < ITERATIONS; i++ {
 		cachedScore := score
 		var bestMutation mutation
+
+		// Try TRIES different mutations and keep the best one.
 		for try := 0; try < TRIES; try++ {
 
 			// Generate a mutation
@@ -78,9 +79,11 @@ func approximate(target *image.RGBA) (*image.RGBA, int) {
 				bestMutation = m
 			}
 
-		} // end tries
+		}
+		// Apply the best mutation,
+		// then restart the loop to place a new rectangle in the image.
 		mutate(approx, bestMutation)
-	} // end iterations
+	}
 	return approx, score
 }
 
@@ -144,14 +147,6 @@ func imgDist(img1, img2 *image.RGBA) (int, error) {
 
 // Returns the pixelwise distance between this canvas with a mutation and a second canvas of the same size.
 func imgDistMutated(img, target *image.RGBA, cachedScore int, m mutation) (int, error) {
-	// Check the mutated region fits inside the canvas.
-	if m.x+m.w > img.Bounds().Dx() || m.y+m.h > img.Bounds().Dy() {
-		return 0, fmt.Errorf("Mutation won't fit.")
-	}
-	// Check the two canvases are the same size
-	if img.Bounds() != target.Bounds() {
-		return 0, fmt.Errorf("Can't compare different-sized canvases.")
-	}
 	score := cachedScore
 	for i := m.x; i < m.x+m.w; i++ {
 		for j := m.y; j < m.y+m.h; j++ {
