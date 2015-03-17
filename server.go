@@ -178,24 +178,29 @@ func toRGBA(_target image.Image) *image.RGBA {
 
 // Returns the url query parameter
 // e.g. in /remote/img?url=wwww.google.com, returns www.google.com
-func urlParam(r *http.Request) string {
+func urlParam(r *http.Request) (string, error) {
 	m := urlArg.FindStringSubmatch(r.URL.String())
 	if m == nil || len(m) < 1 {
-		log.Fatal("Invalid regex.", r.URL.String())
+		return "", fmt.Errorf("Invalid regex.", r.URL.String())
 	}
 	if _, err := url.Parse(m[1]); err != nil {
-		log.Println("Invalid url", m[1])
-		return ""
+		return "", fmt.Errorf("Invalid url", m[1])
 	}
-	return m[1]
+	return m[1], nil
 }
 
 func remoteHandler(w http.ResponseWriter, r *http.Request) {
-	url := urlParam(r)
+	url, err := urlParam(r)
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Println(err)
-		w.Write([]byte("err"))
+		w.Write([]byte(err.Error()))
+		return
 	}
 	defer resp.Body.Close()
 	io.Copy(w, resp.Body)
@@ -204,11 +209,17 @@ func remoteHandler(w http.ResponseWriter, r *http.Request) {
 func approxHandler(w http.ResponseWriter, r *http.Request) {
 
 	// read the image data
-	url := urlParam(r)
+	url, err := urlParam(r)
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Println(err)
-		w.Write([]byte("err"))
+		w.Write([]byte(err.Error()))
+		return
 	}
 	defer resp.Body.Close()
 
