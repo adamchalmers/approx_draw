@@ -13,11 +13,12 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"runtime"
 )
 
 const (
 	TRIES         = 20
-	MUTATIONS     = 2000
+	MUTATIONS     = 20000
 	PIXELSAMPLING = 2
 )
 
@@ -48,6 +49,8 @@ func myRGBAAt(p *image.RGBA, x, y int) color.RGBA {
 // Returns an image which approximately recreates the input image.
 func approximate(target *image.RGBA, ITERATIONS, TRIES, PIXELSAMPLING int) (*image.RGBA, int) {
 
+	NCPU := runtime.NumCPU()
+
 	// Start with a white background.
 	approx := image.NewRGBA(target.Bounds())
 	imgW := approx.Bounds().Dx()
@@ -60,28 +63,55 @@ func approximate(target *image.RGBA, ITERATIONS, TRIES, PIXELSAMPLING int) (*ima
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	cm := make(chan mutation, NCPU)
+	cs := make(chan int, NCPU)
+
 	for i := 0; i < ITERATIONS; i++ {
-		cachedScore := score
-		var bestMutation mutation
 
-		// Try TRIES different mutations and keep the best one.
-		for try := 0; try < TRIES; try++ {
+		// Spawn NCPU goroutines, each of which does MUTATIONS/NCPU mutations.
+		for ch := 0; ch < NCPU; ch++ {
 
-			// Generate a mutation
-			w := rand.Intn(imgW)
-			h := rand.Intn(imgH)
-			x := rand.Intn(imgW - w)
-			y := rand.Intn(imgH - h)
-			rgb := colors[rand.Intn(len(colors))]
-			m := mutation{x, y, w, h, rgb}
+			// Calculate the best mutation on this goroutine.
+			go func(cm chan mutation, cs chan int, n int) {
+				cachedScore := score
+				bestScore := cachedScore
+				var bestMutation mutation
 
-			// Save this mutation if it's the best.
-			tryScore := imgDistMutated(approx, target, cachedScore, m, PIXELSAMPLING)
-			if tryScore < score {
-				score = tryScore
+				// Try TRIES different mutations and keep the best one.
+				for try := 0; try < TRIES/NCPU; try++ {
+
+					// Generate a mutation
+					w := rand.Intn(imgW)
+					h := rand.Intn(imgH)
+					x := rand.Intn(imgW - w)
+					y := rand.Intn(imgH - h)
+					rgb := colors[rand.Intn(len(colors))]
+					m := mutation{x, y, w, h, rgb}
+
+					// Save this mutation if it's the best.
+					tryScore := imgDistMutated(approx, target, cachedScore, m, PIXELSAMPLING)
+					if tryScore < bestScore {
+						bestScore = tryScore
+						bestMutation = m
+					}
+
+				}
+				cm <- bestMutation
+				cs <- bestScore
+			}(cm, cs, ch+0)
+		}
+
+		// Find the best mutation amongst all the goroutines.
+		bestMutation := <-cm
+		bestScore := <-cs
+		for ch := 1; ch < NCPU; ch++ {
+			m := <-cm
+			score = <-cs
+			if score < bestScore {
 				bestMutation = m
+				bestScore = score
 			}
-
 		}
 		// Apply the best mutation,
 		// then restart the loop to place a new rectangle in the image.
@@ -243,6 +273,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	runtime.GOMAXPROCS(4)
 	port := "localhost:4000"
 	fmt.Println("Running on", port)
 
