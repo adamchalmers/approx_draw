@@ -35,6 +35,5 @@ Its performance is O(I*R*P), where I is iterations, R is rectangles per iteratio
 
 <h2>To do</h2>
  - Make GIFs that show the images being built up, rectangle by rectangle
- - Further optimize by cutting off the scoreWithMutation calculation once it's higher than the cached score by enough that the remaining pixels couldn't possibly even it back out.
  - Optimise the server code - why is the JS version twice as fast as the Go version?
  - Resize large images
