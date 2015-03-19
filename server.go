@@ -73,33 +73,7 @@ func approximate(target *image.RGBA, ITERATIONS, TRIES, PIXELSAMPLING int) (*ima
 		for ch := 0; ch < NCPU; ch++ {
 
 			// Calculate the best mutation on this goroutine.
-			go func(cm chan mutation, cs chan int, n int) {
-				cachedScore := score
-				bestScore := cachedScore
-				var bestMutation mutation
-
-				// Try TRIES different mutations and keep the best one.
-				for try := 0; try < TRIES/NCPU; try++ {
-
-					// Generate a mutation
-					w := rand.Intn(imgW)
-					h := rand.Intn(imgH)
-					x := rand.Intn(imgW - w)
-					y := rand.Intn(imgH - h)
-					rgb := colors[rand.Intn(len(colors))]
-					m := mutation{x, y, w, h, rgb}
-
-					// Save this mutation if it's the best.
-					tryScore := imgDistMutated(approx, target, cachedScore, m, PIXELSAMPLING)
-					if tryScore < bestScore {
-						bestScore = tryScore
-						bestMutation = m
-					}
-
-				}
-				cm <- bestMutation
-				cs <- bestScore
-			}(cm, cs, ch+0)
+			go findMutation(score, NCPU, approx, target, colors, cm, cs, ch+0)
 		}
 
 		// Find the best mutation amongst all the goroutines.
@@ -118,6 +92,36 @@ func approximate(target *image.RGBA, ITERATIONS, TRIES, PIXELSAMPLING int) (*ima
 		mutate(approx, bestMutation)
 	}
 	return approx, score
+}
+
+func findMutation(score, NCPU int, approx, target *image.RGBA, colors []color.RGBA, cm chan mutation, cs chan int, n int) {
+	imgW := approx.Bounds().Dx()
+	imgH := approx.Bounds().Dy()
+	cachedScore := score
+	bestScore := cachedScore
+	var bestMutation mutation
+
+	// Try TRIES different mutations and keep the best one.
+	for try := 0; try < TRIES/NCPU; try++ {
+
+		// Generate a mutation
+		w := rand.Intn(imgW)
+		h := rand.Intn(imgH)
+		x := rand.Intn(imgW - w)
+		y := rand.Intn(imgH - h)
+		rgb := colors[rand.Intn(len(colors))]
+		m := mutation{x, y, w, h, rgb}
+
+		// Save this mutation if it's the best.
+		tryScore := imgDistMutated(approx, target, cachedScore, m, PIXELSAMPLING)
+		if tryScore < bestScore {
+			bestScore = tryScore
+			bestMutation = m
+		}
+
+	}
+	cm <- bestMutation
+	cs <- bestScore
 }
 
 // Returns a slice containing all colors used in the image, and
