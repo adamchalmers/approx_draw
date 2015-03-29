@@ -1,4 +1,4 @@
-package main
+package approx_draw
 
 import (
 	"fmt"
@@ -276,7 +276,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, r.URL.Path[1:])
 }
 
-func main() {
+func init() {
 	runtime.GOMAXPROCS(4)
 	port := "localhost:4000"
 	fmt.Println("Running on", port)
@@ -284,8 +284,4 @@ func main() {
 	http.HandleFunc("/", fileHandler)
 	http.HandleFunc("/remote/", remoteHandler)
 	http.HandleFunc("/approx/", approxHandler)
-	err := http.ListenAndServe(port, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
 }
