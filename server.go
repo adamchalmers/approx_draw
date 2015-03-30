@@ -1,8 +1,6 @@
-package approxdraw
+package main
 
 import (
-	"appengine"
-	"appengine/urlfetch"
 	"fmt"
 	"image"
 	"image/color"
@@ -108,7 +106,6 @@ func findMutation(score, NCPU, MUTATIONS int, approx, target *image.RGBA, colors
 
 	// Try MUTATIONS different mutations and keep the best one.
 	for try := 0; try < MUTATIONS/NCPU; try++ {
-		fmt.Printf("Try %v\n", try)
 
 		// Generate a mutation
 		w := rand.Intn(imgW)
@@ -288,18 +285,25 @@ func getImg(r *http.Request) (io.ReadCloser, error) {
 		return nil, err
 	}
 	// Fetch the image
-	c := appengine.NewContext(r)
-	client := urlfetch.Client(c)
-	resp, err := client.Get(url)
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	return resp.Body, nil
 }
 
-func init() {
+func main() {
+	runtime.GOMAXPROCS(4)
+	port := "localhost:4000"
+	fmt.Println("Running on", port)
+
 	http.HandleFunc("/", fileHandler)
 	http.HandleFunc("/remote/", remoteHandler)
 	http.HandleFunc("/approx/", approxHandler)
 	http.HandleFunc("/stats/", statsHandler)
+
+	err := http.ListenAndServe(port, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
