@@ -1,6 +1,8 @@
-package approx_draw
+package approxdraw
 
 import (
+	"appengine"
+	"appengine/urlfetch"
 	"fmt"
 	"image"
 	"image/color"
@@ -18,7 +20,7 @@ import (
 
 const (
 	TRIES         = 20
-	MUTATIONS     = 20000
+	MUTATIONS     = 2000
 	PIXELSAMPLING = 2
 )
 
@@ -230,7 +232,10 @@ func remoteHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	resp, err := http.Get(url)
+	//resp, err := http.Get(url)
+	c := appengine.NewContext(r)
+	client := urlfetch.Client(c)
+	resp, err := client.Get(url)
 	if err != nil {
 		log.Println(err)
 		w.Write([]byte(err.Error()))
@@ -249,7 +254,10 @@ func approxHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	resp, err := http.Get(url)
+	//resp, err := http.Get(url)
+	c := appengine.NewContext(r)
+	client := urlfetch.Client(c)
+	resp, err := client.Get(url)
 	if err != nil {
 		log.Println(err)
 		w.Write([]byte(err.Error()))
@@ -277,9 +285,6 @@ func fileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func init() {
-	runtime.GOMAXPROCS(4)
-	port := "localhost:4000"
-	fmt.Println("Running on", port)
 
 	http.HandleFunc("/", fileHandler)
 	http.HandleFunc("/remote/", remoteHandler)

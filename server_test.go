@@ -1,4 +1,4 @@
-package main
+package approxdraw
 
 import (
 	"github.com/stretchr/testify/assert"
