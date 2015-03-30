@@ -28,24 +28,9 @@
   </div>
 
   <script src="jquery/dist/jquery.js"></script>
-  <script>
-    rendering = false;
-    ITERATIONS = 10;
-    MUTATIONS_PER_ITERATION = 400;
-    $("#start").on("click", function() {
-      if (!rendering) {
-        rendering = true;
-        var targetPrefix = "/remote/img?url=";
-        var approxPrefix = "/approx/img?url=";
-        var imgUrl = $("#imgUrl").val();
-        $("#target-image").attr("src", targetPrefix + imgUrl).css("height", "auto").css("width", "auto");
-        $("#approx-image").attr("src", approxPrefix + imgUrl).css("height", "auto").css("width", "auto");
-        console.log("Rendering", imgUrl);
-      }
-    });
-
-  </script>
-  <span id="footer">Made by <a href="http://twitter.com/adam_chal">@adam_chal</a>. Fork this on <a href="https://github.com/adamchalmers/approx_draw">Github</a>!
+  <script src="main.js"></script>
+  <span id="footer-right">
+    Made by <a href="http://twitter.com/adam_chal">@adam_chal</a>. Fork this on <a href="https://github.com/adamchalmers/approx_draw">Github</a>!
   </span>
 </body>
 </html>
