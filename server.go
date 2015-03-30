@@ -23,6 +23,7 @@ const (
 	TRIES         = 30
 	MUTATIONS     = 8000
 	PIXELSAMPLING = 4
+	MAXSIZE       = 300
 )
 
 var urlArg = regexp.MustCompile("url=(.*)")
@@ -255,6 +256,10 @@ func approxHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 		return
 	}
+	if dx, dy := _target.Bounds().Dx(), _target.Bounds().Dy(); dx > MAXSIZE || dy > MAXSIZE {
+		msg := fmt.Sprintf("Image of size %v.%v is too large (max size is %v)", dx, dy, MAXSIZE)
+		io.Copy(w, strings.NewReader(msg))
+	}
 
 	target := toRGBA(_target)
 
@@ -275,19 +280,19 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 
 // Returns the image from a URL.
 func getImg(r *http.Request) (io.ReadCloser, error) {
-	// read the image data
+	// Get the URL of the target image
 	url, err := urlParam(r)
 	if err != nil {
 		return nil, err
 	}
-	//resp, err := http.Get(url)
+	// Fetch the image
 	c := appengine.NewContext(r)
 	client := urlfetch.Client(c)
 	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}
-	return resp.Body, err
+	return resp.Body, nil
 }
 
 func init() {
