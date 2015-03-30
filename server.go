@@ -22,7 +22,7 @@ import (
 const (
 	TRIES         = 30
 	MUTATIONS     = 10000
-	PIXELSAMPLING = 4
+	PIXELSAMPLING = 8
 	MAXSIZE       = 300
 )
 

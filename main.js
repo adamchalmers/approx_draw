@@ -3,8 +3,6 @@ MAXSIZE = 300;
 $("#start").on("click", function() {
   if (!rendering) {
     rendering = true;
-    console.log("Rendering", imgUrl);
-    var startTime = (new Date()).getTime();
 
     // Load the target and approximation images.
     var targetPrefix = "/remote/img?url=";
@@ -12,6 +10,8 @@ $("#start").on("click", function() {
     var imgUrl = $("#imgUrl").val();
     $("#target-image").attr("src", targetPrefix + imgUrl).css("height", "auto").css("width", "auto");
     $("#approx-image").attr("src", approxPrefix + imgUrl).css("height", "auto").css("width", "auto");
+    console.log("Rendering", imgUrl);
+    var startTime = (new Date()).getTime();
 
 
     // Once the target has loaded, we can check it's within the size limits.
