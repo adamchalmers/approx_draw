@@ -21,7 +21,7 @@ import (
 
 const (
 	TRIES         = 30
-	MUTATIONS     = 8000
+	MUTATIONS     = 10000
 	PIXELSAMPLING = 4
 	MAXSIZE       = 300
 )
@@ -51,9 +51,10 @@ func myRGBAAt(p *image.RGBA, x, y int) color.RGBA {
 }
 
 // Returns an image which approximately recreates the input image.
-func approximate(target *image.RGBA, ITERATIONS, TRIES, PIXELSAMPLING int) (*image.RGBA, int) {
+func approximate(target *image.RGBA, TRIES, MUTATIONS, PIXELSAMPLING int) (*image.RGBA, int) {
 
 	NCPU := runtime.NumCPU()
+	fmt.Printf("%v\n", NCPU)
 
 	// Start with a white background.
 	approx := image.NewRGBA(target.Bounds())
@@ -71,13 +72,13 @@ func approximate(target *image.RGBA, ITERATIONS, TRIES, PIXELSAMPLING int) (*ima
 	cm := make(chan mutation, NCPU)
 	cs := make(chan int, NCPU)
 
-	for i := 0; i < ITERATIONS; i++ {
+	for i := 0; i < TRIES; i++ {
 
 		// Spawn NCPU goroutines, each of which does MUTATIONS/NCPU mutations.
 		for ch := 0; ch < NCPU; ch++ {
 
 			// Calculate the best mutation on this goroutine.
-			go findMutation(score, NCPU, approx, target, colors, cm, cs, ch+0)
+			go findMutation(score, NCPU, MUTATIONS, approx, target, colors, cm, cs)
 		}
 
 		// Find the best mutation amongst all the goroutines.
@@ -98,15 +99,16 @@ func approximate(target *image.RGBA, ITERATIONS, TRIES, PIXELSAMPLING int) (*ima
 	return approx, score
 }
 
-func findMutation(score, NCPU int, approx, target *image.RGBA, colors []color.RGBA, cm chan mutation, cs chan int, n int) {
+func findMutation(score, NCPU, MUTATIONS int, approx, target *image.RGBA, colors []color.RGBA, cm chan mutation, cs chan int) {
 	imgW := approx.Bounds().Dx()
 	imgH := approx.Bounds().Dy()
 	cachedScore := score
 	bestScore := cachedScore
 	var bestMutation mutation
 
-	// Try TRIES different mutations and keep the best one.
-	for try := 0; try < TRIES/NCPU; try++ {
+	// Try MUTATIONS different mutations and keep the best one.
+	for try := 0; try < MUTATIONS/NCPU; try++ {
+		fmt.Printf("Try %v\n", try)
 
 		// Generate a mutation
 		w := rand.Intn(imgW)

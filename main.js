@@ -3,6 +3,7 @@ MAXSIZE = 300;
 $("#start").on("click", function() {
   if (!rendering) {
     rendering = true;
+    var startTime = (new Date()).getTime();
 
     // Load the target and approximation images.
     var targetPrefix = "/remote/img?url=";
@@ -24,13 +25,16 @@ $("#start").on("click", function() {
             $("#error").text("");
             $(this).show();
             $("#approx-image").show();
-            $.get("/stats", function(data) {
-                console.log(data);
-            });
         }
         rendering = false;
     })
     console.log("Rendering", imgUrl);
+    $("#approx-image").on("load", function() {
+        $.get("/stats", function(data) {
+            console.log(data);
+            console.log("Took " + Math.round(((new Date()).getTime()-startTime)/1000) + " seconds.");
+        });
+    })
 
   }
 });
