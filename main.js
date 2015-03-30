@@ -3,6 +3,7 @@ MAXSIZE = 300;
 $("#start").on("click", function() {
   if (!rendering) {
     rendering = true;
+    console.log("Rendering", imgUrl);
     var startTime = (new Date()).getTime();
 
     // Load the target and approximation images.
@@ -11,6 +12,7 @@ $("#start").on("click", function() {
     var imgUrl = $("#imgUrl").val();
     $("#target-image").attr("src", targetPrefix + imgUrl).css("height", "auto").css("width", "auto");
     $("#approx-image").attr("src", approxPrefix + imgUrl).css("height", "auto").css("width", "auto");
+
 
     // Once the target has loaded, we can check it's within the size limits.
     $("#target-image").on("load", function() {
@@ -25,11 +27,15 @@ $("#start").on("click", function() {
             $("#error").text("");
             $(this).show();
             $("#approx-image").show();
+            $("#loader-image").css("width", this.width).css("height", this.height).show();
         }
         rendering = false;
     })
-    console.log("Rendering", imgUrl);
+
+
+    // Once the approximation's loaded, hide the loading placeholder and log stats to console.
     $("#approx-image").on("load", function() {
+    $("#loader-image").hide();
         $.get("/stats", function(data) {
             console.log(data);
             console.log("Took " + Math.round(((new Date()).getTime()-startTime)/1000) + " seconds.");
