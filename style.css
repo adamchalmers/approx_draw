@@ -59,3 +59,25 @@ h1 {
 #error {
   color: #b73333;
 }
+
+#progress {
+    height: 10px;
+    border: 1px solid lightgray;
+    border-radius: 5px;
+    background-color: lightgray;
+}
+
+#progress .filled {
+    background-color: deeppink;
+    border-radius: 5px;
+    border-color: deeppink;
+    height: 100%;
+    width: 0;
+}
+
+#serverlog {
+    height: 200px;
+    overflow: hidden;
+    list-style: none;
+    text-align: left;
+}
