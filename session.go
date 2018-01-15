@@ -21,9 +21,7 @@ func newClient(conn *websocket.Conn) *Client {
 
 // The Dispatcher; we spawn one for every client
 func (c *Client) tx() {
-	defer func() {
-		c.conn.Close()
-	}()
+	defer c.conn.Close()
 
 	for {
 		event, ok := <-c.broadcast

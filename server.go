@@ -150,7 +150,7 @@ func getImg(r *http.Request) (io.ReadCloser, error) {
 
 func main() {
 	runtime.GOMAXPROCS(4)
-	port := "localhost:4000"
+	port := "0.0.0.0:4000"
 	fmt.Println("Running on", port)
 
 	http.HandleFunc("/", fileHandler)
