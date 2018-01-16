@@ -30,18 +30,17 @@ $(function() {
 i = 0; 
 $("#start").on("click", function() {
     // Load the target and approximation images.
-    var targetPrefix = "/remote/img?url=";
-    var approxPrefix = "/approx/img?url=";
-    var imgUrl = $("#imgUrl").val();
+    const targetPrefix = "/remote/img?url=";
+    const approxPrefix = "/approx/img?url=";
+    const imgUrl = $("#imgUrl").val();
     $("#target-image").attr("src", targetPrefix + imgUrl).css("height", "auto").css("width", "auto");
     $("#approx-image").attr("src", approxPrefix + imgUrl + "&" + i++).css("height", "auto").css("width", "auto");
     console.log("Rendering", imgUrl);
-    var startTime = (new Date()).getTime();
+    const startTime = (new Date()).getTime();
 
 
-    // Once the target has loaded, we can check it's within the size limits.
+    // Once the target has loaded, we can display it
     $("#target-image").on("load", function() {
-        // If it is, show the images and stats.
         $("#error").text("");
         $(this).show();
         $("#approx-image").show();
@@ -55,5 +54,4 @@ $("#start").on("click", function() {
             console.log("Took " + Math.round(((new Date()).getTime()-startTime)/1000) + " seconds.");
         });
     });
-
 });
